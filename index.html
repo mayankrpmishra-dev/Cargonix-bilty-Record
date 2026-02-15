@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CARGONIX MOVERS PVT. LTD. - Advanced Enterprise Ledger</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --primary: #002e5b; --accent: #f39c12; --success: #27ae60; --danger: #c0392b;
+            --c1: #8e44ad; --c2: #2980b9; --c3: #16a085; --c4: #d35400; --c5: #2c3e50;
+        }
+        body { font-family: 'Poppins', sans-serif; background: #f4f7f6; margin: 0; color: #333; }
+
+        .header-main { background: var(--primary); color: white; text-align: center; padding: 40px 20px 70px; border-bottom: 5px solid var(--accent); }
+        .header-main h1 { margin: 0; font-size: 2.2rem; font-weight: 800; letter-spacing: 1px; }
+
+        .stats-container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: -50px auto 30px; max-width: 1100px; padding: 0 20px; }
+        .stat-box { 
+            background: white; flex: 1; min-width: 280px; padding: 25px; 
+            border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.15); text-align: center;
+            border-top: 6px solid var(--accent);
+        }
+        .stat-val { font-size: 2rem; font-weight: 800; color: var(--primary); }
+
+        .company-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; padding: 20px; max-width: 1400px; margin: auto; }
+        .company-card { 
+            background: white; padding: 30px; border-radius: 18px; cursor: pointer; transition: 0.3s; 
+            border-left: 10px solid #ccc; box-shadow: 0 6px 15px rgba(0,0,0,0.05);
+        }
+        .company-card:hover { transform: translateY(-8px); }
+        .comp-stats { display: flex; justify-content: space-between; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; font-size: 0.9rem; }
+
+        #ledger-section { display: none; padding: 30px; }
+        .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        
+        /* New Systematic Grid */
+        .grid-form { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
+            gap: 15px; background: white; padding: 30px; border-radius: 20px; margin-bottom: 30px;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.08);
+        }
+        .input-group { display: flex; flex-direction: column; }
+        .input-group label { font-size: 11px; font-weight: 700; color: #555; margin-bottom: 5px; text-transform: uppercase; }
+        .grid-form input { padding: 12px; border: 1.5px solid #eee; border-radius: 10px; font-family: 'Poppins'; transition: 0.3s; }
+        .grid-form input:focus { border-color: var(--accent); outline: none; background: #fffdf9; }
+        .auto-field { background: #f4fdf8 !important; font-weight: bold; color: var(--success); border-color: #d1f2e0 !important; }
+
+        .btn-action { grid-column: 1 / -1; display: flex; gap: 15px; }
+        .btn-action button { flex: 1; padding: 16px; font-weight: 700; border:none; border-radius:12px; color:white; cursor:pointer; font-size: 1rem; }
+
+        .table-wrap { overflow-x: auto; background: white; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; min-width: 2200px; }
+        th { background: var(--primary); color: white; padding: 18px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+        td { padding: 15px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        
+        .search-box { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #ddd; margin-bottom: 20px; }
+        .action-btns button { font-size: 18px; margin-right: 10px; border: none; background: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="landing-page">
+    <div class="header-main">
+        <h1>CARGONIX MOVERS PVT. LTD.</h1>
+        <p>Premium Enterprise Logistics & Financial Ledger</p>
+    </div>
+
+    <div class="stats-container">
+        <div class="stat-box">
+            <h2>Total Net Profit</h2>
+            <div class="stat-val" id="grandTotalDisplay">₹ 0.00</div>
+        </div>
+        <div class="stat-box" style="border-top-color: var(--danger);">
+            <h2>Total Party Outstanding</h2>
+            <div class="stat-val" style="color:var(--danger)" id="grandPendingDisplay">₹ 0.00</div>
+        </div>
+    </div>
+
+    <div class="company-grid" id="compGrid">
+        <script>
+            const companies = [
+                {id: 'C1', name: 'AKASA CLEAN ENERGY PRIVATE LIMITED', class: 'card-c1'},
+                {id: 'C2', name: 'CLN ENERGY LIMITED', class: 'card-c2'},
+                {id: 'C3', name: 'MEFRON TECHNOLOGIES INDIA PVT LTD', class: 'card-c3'},
+                {id: 'C4', name: 'ABILITY AUTOMATION SOLUTIONS PVT LTD', class: 'card-c4'},
+                {id: 'C5', name: 'PREMIER PAPER PACKAGING PVT LTD', class: 'card-c5'}
+            ];
+            companies.forEach(c => {
+                document.write(`
+                    <div class="company-card ${c.class}" onclick="openLedger('${c.id}', '${c.name}')">
+                        <h3>${c.name}</h3>
+                        <div class="comp-stats">
+                            <span>Profit: <b id="p-${c.id}">₹ 0</b></span>
+                            <span>Pend: <b id="pn-${c.id}" style="color:red">₹ 0</b></span>
+                        </div>
+                    </div>
+                `);
+            });
+        </script>
+    </div>
+</div>
+
+<div id="ledger-section">
+    <div class="nav-bar">
+        <button onclick="goBack()" style="padding:12px 25px; cursor:pointer; border-radius:10px; border:none; background:#555; color:white; font-weight:600;">⬅ Dashboard</button>
+        <h2 id="currentCompanyName" style="color:var(--primary); margin:0;"></h2>
+        <button onclick="exportToExcel()" style="padding:12px 25px; cursor:pointer; border-radius:10px; border:none; background:#1d6f42; color:white; font-weight:600;">📊 Export Excel</button>
+    </div>
+    
+    <div class="grid-form">
+        <input type="hidden" id="editIndex" value="-1">
+        
+        <div class="input-group"><label>Date</label><input type="date" id="fDate"></div>
+        <div class="input-group"><label>Bilty No</label><input type="text" id="fBilty"></div>
+        <div class="input-group"><label>Bill No</label><input type="text" id="fBill"></div>
+        <div class="input-group"><label>From</label><input type="text" id="fFrom" placeholder="City"></div>
+        <div class="input-group"><label>To</label><input type="text" id="fTo" placeholder="City"></div>
+        
+        <div class="input-group"><label>Party Charge (₹)</label><input type="number" id="fPartyCharge" oninput="doCalculations()"></div>
+        <div class="input-group"><label>GST (18%)</label><input type="number" id="fGST" class="auto-field" readonly></div>
+        <div class="input-group"><label>Total Bill</label><input type="number" id="fTotalBill" class="auto-field" readonly></div>
+        <div class="input-group"><label>Party Pending (₹)</label><input type="number" id="fPartyPending" placeholder="0"></div>
+        
+        <div class="input-group"><label>Truck Hire (₹)</label><input type="number" id="fTruckHire" oninput="doCalculations()"></div>
+        <div class="input-group"><label>Loading (₹)</label><input type="number" id="fLoading" oninput="doCalculations()"></div>
+        <div class="input-group"><label>Truck Total</label><input type="number" id="fTruckTotal" class="auto-field" readonly></div>
+        
+        <div class="input-group"><label>Broker Adv (₹)</label><input type="number" id="fAdv" oninput="doCalculations()"></div>
+        <div class="input-group"><label>Broker Pend (₹)</label><input type="number" id="fPending" class="auto-field" readonly></div>
+        <div class="input-group"><label>Broker Clear Date</label><input type="date" id="fClearDate"></div>
+
+        <div class="input-group"><label>Weight</label><input type="text" id="fWeight" placeholder="e.g. 15 Ton"></div>
+        <div class="input-group"><label>Box Qty</label><input type="number" id="fBox" placeholder="0"></div>
+        <div class="input-group"><label>Vehicle No</label><input type="text" id="fVehicle" placeholder="GJ 01 XX 0000"></div>
+        
+        <div class="btn-action">
+            <button id="saveBtn" onclick="saveEntry()" style="background:var(--success);">SAVE RECORD</button>
+            <button id="updateBtn" onclick="saveEntry()" style="background:var(--primary); display:none;">UPDATE RECORD</button>
+            <button id="cancelBtn" onclick="clearInputs()" style="background:#888; display:none;">CANCEL</button>
+        </div>
+    </div>
+
+    <input type="text" id="search" class="search-box" placeholder="🔍 Search by Bilty, Vehicle, or City..." onkeyup="filterTable()">
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Bilty No</th>
+                    <th>Bill No</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Party Charge</th>
+                    <th>GST</th>
+                    <th>Total Bill</th>
+                    <th>Party Pending</th>
+                    <th>Truck Hire</th>
+                    <th>Loading</th>
+                    <th>Truck Total</th>
+                    <th>Brok. Advance</th>
+                    <th>Brok. Pending</th>
+                    <th>Brok. Clear Date</th>
+                    <th>Weight</th>
+                    <th>Box Qty</th>
+                    <th>Vehicle No</th>
+                    <th>Net Profit</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="ledgerRows"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let activeID = '';
+    let db = JSON.parse(localStorage.getItem('cargonix_v5_pro')) || { C1:[], C2:[], C3:[], C4:[], C5:[] };
+
+    function doCalculations() {
+        // GST & Total Bill
+        let charge = parseFloat(document.getElementById('fPartyCharge').value) || 0;
+        let gst = charge * 0.18;
+        document.getElementById('fGST').value = gst.toFixed(2);
+        document.getElementById('fTotalBill').value = (charge + gst).toFixed(2);
+
+        // Truck Total
+        let hire = parseFloat(document.getElementById('fTruckHire').value) || 0;
+        let loading = parseFloat(document.getElementById('fLoading').value) || 0;
+        let truckTotal = hire + loading;
+        document.getElementById('fTruckTotal').value = truckTotal.toFixed(2);
+
+        // Broker Pending Calculation
+        let adv = parseFloat(document.getElementById('fAdv').value) || 0;
+        document.getElementById('fPending').value = (truckTotal - adv).toFixed(2);
+    }
+
+    function updateDashboard() {
+        let gProfit = 0; let gPend = 0;
+        ['C1','C2','C3','C4','C5'].forEach(id => {
+            let p = 0; let pen = 0;
+            db[id].forEach(item => {
+                p += (item.charge - item.truckTotal);
+                pen += (parseFloat(item.partyPend) || 0);
+            });
+            document.getElementById('p-'+id).innerText = "₹ " + p.toLocaleString('en-IN');
+            document.getElementById('pn-'+id).innerText = "₹ " + pen.toLocaleString('en-IN');
+            gProfit += p; gPend += pen;
+        });
+        document.getElementById('grandTotalDisplay').innerText = "₹ " + gProfit.toLocaleString('en-IN');
+        document.getElementById('grandPendingDisplay').innerText = "₹ " + gPend.toLocaleString('en-IN');
+        localStorage.setItem('cargonix_v5_pro', JSON.stringify(db));
+    }
+
+    function openLedger(id, name) {
+        activeID = id;
+        document.getElementById('landing-page').style.display = 'none';
+        document.getElementById('ledger-section').style.display = 'block';
+        document.getElementById('currentCompanyName').innerText = name;
+        renderTable();
+    }
+
+    function goBack() {
+        document.getElementById('landing-page').style.display = 'block';
+        document.getElementById('ledger-section').style.display = 'none';
+        updateDashboard();
+    }
+
+    function saveEntry() {
+        const item = {
+            date: document.getElementById('fDate').value,
+            bilty: document.getElementById('fBilty').value,
+            bill: document.getElementById('fBill').value,
+            from: document.getElementById('fFrom').value,
+            to: document.getElementById('fTo').value,
+            charge: parseFloat(document.getElementById('fPartyCharge').value) || 0,
+            gst: parseFloat(document.getElementById('fGST').value) || 0,
+            totalBill: parseFloat(document.getElementById('fTotalBill').value) || 0,
+            partyPend: parseFloat(document.getElementById('fPartyPending').value) || 0,
+            hire: parseFloat(document.getElementById('fTruckHire').value) || 0,
+            loading: parseFloat(document.getElementById('fLoading').value) || 0,
+            truckTotal: parseFloat(document.getElementById('fTruckTotal').value) || 0,
+            adv: parseFloat(document.getElementById('fAdv').value) || 0,
+            pending: parseFloat(document.getElementById('fPending').value) || 0,
+            clearDate: document.getElementById('fClearDate').value,
+            weight: document.getElementById('fWeight').value,
+            box: document.getElementById('fBox').value,
+            vehicle: document.getElementById('fVehicle').value
+        };
+
+        const editIndex = document.getElementById('editIndex').value;
+        if(editIndex == "-1") {
+            db[activeID].unshift(item);
+        } else {
+            db[activeID][editIndex] = item;
+        }
+        
+        updateDashboard();
+        renderTable();
+        clearInputs();
+    }
+
+    function renderTable() {
+        const rows = document.getElementById('ledgerRows');
+        rows.innerHTML = '';
+        db[activeID].forEach((item, index) => {
+            const profit = item.charge - item.truckTotal;
+            rows.innerHTML += `
+                <tr>
+                    <td>${item.date}</td>
+                    <td>${item.bilty}</td>
+                    <td>${item.bill}</td>
+                    <td>${item.from}</td>
+                    <td>${item.to}</td>
+                    <td>₹${item.charge}</td>
+                    <td style="color:green">₹${item.gst}</td>
+                    <td>₹${item.totalBill}</td>
+                    <td style="color:red; font-weight:bold">₹${item.partyPend}</td>
+                    <td>₹${item.hire}</td>
+                    <td>₹${item.loading}</td>
+                    <td style="background:#f9f9f9; font-weight:bold;">₹${item.truckTotal}</td>
+                    <td style="color:blue">₹${item.adv}</td>
+                    <td style="color:orange">₹${item.pending}</td>
+                    <td>${item.clearDate}</td>
+                    <td>${item.weight}</td>
+                    <td>${item.box}</td>
+                    <td><b>${item.vehicle}</b></td>
+                    <td style="color:${profit>=0?'green':'red'}; font-weight:800; font-size:15px;">₹${profit.toLocaleString('en-IN')}</td>
+                    <td class="action-btns">
+                        <button onclick="editEntry(${index})">✏️</button>
+                        <button onclick="deleteEntry(${index})">🗑️</button>
+                    </td>
+                </tr>`;
+        });
+    }
+
+    function editEntry(i) {
+        const item = db[activeID][i];
+        document.getElementById('editIndex').value = i;
+        document.getElementById('fDate').value = item.date;
+        document.getElementById('fBilty').value = item.bilty;
+        document.getElementById('fBill').value = item.bill;
+        document.getElementById('fFrom').value = item.from;
+        document.getElementById('fTo').value = item.to;
+        document.getElementById('fPartyCharge').value = item.charge;
+        document.getElementById('fPartyPending').value = item.partyPend;
+        document.getElementById('fTruckHire').value = item.hire;
+        document.getElementById('fLoading').value = item.loading;
+        document.getElementById('fAdv').value = item.adv;
+        document.getElementById('fClearDate').value = item.clearDate;
+        document.getElementById('fWeight').value = item.weight;
+        document.getElementById('fBox').value = item.box;
+        document.getElementById('fVehicle').value = item.vehicle;
+        
+        doCalculations();
+        document.getElementById('saveBtn').style.display = 'none';
+        document.getElementById('updateBtn').style.display = 'block';
+        document.getElementById('cancelBtn').style.display = 'block';
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function deleteEntry(i) {
+        if(confirm("Are you sure you want to delete this record?")) {
+            db[activeID].splice(i, 1);
+            updateDashboard();
+            renderTable();
+        }
+    }
+
+    function clearInputs() {
+        document.getElementById('editIndex').value = "-1";
+        document.querySelectorAll('.grid-form input').forEach(i => i.value = '');
+        document.getElementById('fDate').valueAsDate = new Date();
+        document.getElementById('saveBtn').style.display = 'block';
+        document.getElementById('updateBtn').style.display = 'none';
+        document.getElementById('cancelBtn').style.display = 'none';
+    }
+
+    function filterTable() {
+        let val = document.getElementById('search').value.toLowerCase();
+        let tr = document.getElementById('ledgerRows').getElementsByTagName('tr');
+        for (let row of tr) { row.style.display = row.innerText.toLowerCase().includes(val) ? "" : "none"; }
+    }
+
+    function exportToExcel() {
+        const ws = XLSX.utils.json_to_sheet(db[activeID]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Ledger");
+        XLSX.writeFile(wb, "Cargonix_Enterprise_Report.xlsx");
+    }
+
+    updateDashboard();
+</script>
+
+</body>
+</html>
