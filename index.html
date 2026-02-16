@@ -35,7 +35,6 @@
         #ledger-section { display: none; padding: 30px; }
         .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
         
-        /* New Systematic Grid */
         .grid-form { 
             display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
             gap: 15px; background: white; padding: 30px; border-radius: 20px; margin-bottom: 30px;
@@ -148,26 +147,11 @@
         <table>
             <thead>
                 <tr>
-                    <th>Date</th>
-                    <th>Bilty No</th>
-                    <th>Bill No</th>
-                    <th>From</th>
-                    <th>To</th>
-                    <th>Party Charge</th>
-                    <th>GST</th>
-                    <th>Total Bill</th>
-                    <th>Party Pending</th>
-                    <th>Truck Hire</th>
-                    <th>Loading</th>
-                    <th>Truck Total</th>
-                    <th>Brok. Advance</th>
-                    <th>Brok. Pending</th>
-                    <th>Brok. Clear Date</th>
-                    <th>Weight</th>
-                    <th>Box Qty</th>
-                    <th>Vehicle No</th>
-                    <th>Net Profit</th>
-                    <th>Actions</th>
+                    <th>Date</th><th>Bilty No</th><th>Bill No</th><th>From</th><th>To</th>
+                    <th>Party Charge</th><th>GST</th><th>Total Bill</th><th>Party Pending</th>
+                    <th>Truck Hire</th><th>Loading</th><th>Truck Total</th><th>Brok. Advance</th>
+                    <th>Brok. Pending</th><th>Brok. Clear Date</th><th>Weight</th><th>Box Qty</th>
+                    <th>Vehicle No</th><th>Net Profit</th><th>Actions</th>
                 </tr>
             </thead>
             <tbody id="ledgerRows"></tbody>
@@ -176,23 +160,23 @@
 </div>
 
 <script>
+    // GOOGLE SHEET SYNC URL
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbw-pROkYdJtHC1c9FsqLLwA9xJ28t7kPkBMRw7DaEDUUJz954q7o32OJn9EiEesJ5qCOQ/exec';
+
     let activeID = '';
     let db = JSON.parse(localStorage.getItem('cargonix_v5_pro')) || { C1:[], C2:[], C3:[], C4:[], C5:[] };
 
     function doCalculations() {
-        // GST & Total Bill
         let charge = parseFloat(document.getElementById('fPartyCharge').value) || 0;
         let gst = charge * 0.18;
         document.getElementById('fGST').value = gst.toFixed(2);
         document.getElementById('fTotalBill').value = (charge + gst).toFixed(2);
 
-        // Truck Total
         let hire = parseFloat(document.getElementById('fTruckHire').value) || 0;
         let loading = parseFloat(document.getElementById('fLoading').value) || 0;
         let truckTotal = hire + loading;
         document.getElementById('fTruckTotal').value = truckTotal.toFixed(2);
 
-        // Broker Pending Calculation
         let adv = parseFloat(document.getElementById('fAdv').value) || 0;
         document.getElementById('fPending').value = (truckTotal - adv).toFixed(2);
     }
@@ -201,12 +185,14 @@
         let gProfit = 0; let gPend = 0;
         ['C1','C2','C3','C4','C5'].forEach(id => {
             let p = 0; let pen = 0;
-            db[id].forEach(item => {
-                p += (item.charge - item.truckTotal);
-                pen += (parseFloat(item.partyPend) || 0);
-            });
-            document.getElementById('p-'+id).innerText = "₹ " + p.toLocaleString('en-IN');
-            document.getElementById('pn-'+id).innerText = "₹ " + pen.toLocaleString('en-IN');
+            if(db[id]){
+                db[id].forEach(item => {
+                    p += (item.charge - item.truckTotal);
+                    pen += (parseFloat(item.partyPend) || 0);
+                });
+            }
+            if(document.getElementById('p-'+id)) document.getElementById('p-'+id).innerText = "₹ " + p.toLocaleString('en-IN');
+            if(document.getElementById('pn-'+id)) document.getElementById('pn-'+id).innerText = "₹ " + pen.toLocaleString('en-IN');
             gProfit += p; gPend += pen;
         });
         document.getElementById('grandTotalDisplay').innerText = "₹ " + gProfit.toLocaleString('en-IN');
@@ -230,6 +216,7 @@
 
     function saveEntry() {
         const item = {
+            companyName: document.getElementById('currentCompanyName').innerText, // Added for Sheet identification
             date: document.getElementById('fDate').value,
             bilty: document.getElementById('fBilty').value,
             bill: document.getElementById('fBill').value,
@@ -247,7 +234,8 @@
             clearDate: document.getElementById('fClearDate').value,
             weight: document.getElementById('fWeight').value,
             box: document.getElementById('fBox').value,
-            vehicle: document.getElementById('fVehicle').value
+            vehicle: document.getElementById('fVehicle').value,
+            profit: (parseFloat(document.getElementById('fPartyCharge').value) || 0) - (parseFloat(document.getElementById('fTruckTotal').value) || 0)
         };
 
         const editIndex = document.getElementById('editIndex').value;
@@ -257,6 +245,14 @@
             db[activeID][editIndex] = item;
         }
         
+        // SYNC TO GOOGLE SHEETS
+        fetch(scriptURL, { 
+            method: 'POST', 
+            mode: 'no-cors', 
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(item) 
+        }).then(() => console.log("Cloud Sync Success"));
+
         updateDashboard();
         renderTable();
         clearInputs();
@@ -269,24 +265,12 @@
             const profit = item.charge - item.truckTotal;
             rows.innerHTML += `
                 <tr>
-                    <td>${item.date}</td>
-                    <td>${item.bilty}</td>
-                    <td>${item.bill}</td>
-                    <td>${item.from}</td>
-                    <td>${item.to}</td>
-                    <td>₹${item.charge}</td>
-                    <td style="color:green">₹${item.gst}</td>
-                    <td>₹${item.totalBill}</td>
+                    <td>${item.date}</td><td>${item.bilty}</td><td>${item.bill}</td><td>${item.from}</td><td>${item.to}</td>
+                    <td>₹${item.charge}</td><td style="color:green">₹${item.gst}</td><td>₹${item.totalBill}</td>
                     <td style="color:red; font-weight:bold">₹${item.partyPend}</td>
-                    <td>₹${item.hire}</td>
-                    <td>₹${item.loading}</td>
-                    <td style="background:#f9f9f9; font-weight:bold;">₹${item.truckTotal}</td>
-                    <td style="color:blue">₹${item.adv}</td>
-                    <td style="color:orange">₹${item.pending}</td>
-                    <td>${item.clearDate}</td>
-                    <td>${item.weight}</td>
-                    <td>${item.box}</td>
-                    <td><b>${item.vehicle}</b></td>
+                    <td>₹${item.hire}</td><td>₹${item.loading}</td><td style="background:#f9f9f9; font-weight:bold;">₹${item.truckTotal}</td>
+                    <td style="color:blue">₹${item.adv}</td><td style="color:orange">₹${item.pending}</td>
+                    <td>${item.clearDate}</td><td>${item.weight}</td><td>${item.box}</td><td><b>${item.vehicle}</b></td>
                     <td style="color:${profit>=0?'green':'red'}; font-weight:800; font-size:15px;">₹${profit.toLocaleString('en-IN')}</td>
                     <td class="action-btns">
                         <button onclick="editEntry(${index})">✏️</button>
