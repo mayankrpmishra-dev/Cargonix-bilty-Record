@@ -203,15 +203,13 @@
     function surajCalc() {
         let charge = parseFloat(document.getElementById('sCharge').value) || 0;
         let hire = parseFloat(document.getElementById('sHire').value) || 0;
-        let toll = parseFloat(document.getElementById('sToll').value) || 0;
-        let diesel = parseFloat(document.getElementById('sDiesel').value) || 0;
         let bAdv = parseFloat(document.getElementById('sBAdv').value) || 0;
 
         document.getElementById('sGST').value = (charge * 0.18).toFixed(0);
         document.getElementById('sTotalBill').value = (charge * 1.18).toFixed(0);
         
-        // Calculation: Hire - Toll - Diesel - Broker Adv = Pending
-        document.getElementById('sBPend').value = (hire - toll - diesel - bAdv).toFixed(0);
+        // Updated Calculation: Only Truck Hire - Broker Adv = Pending
+        document.getElementById('sBPend').value = (hire - bAdv).toFixed(0);
         document.getElementById('sProfit').value = (charge - hire).toFixed(0);
     }
 
