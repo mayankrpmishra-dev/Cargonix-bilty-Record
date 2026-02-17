@@ -32,14 +32,11 @@
         .auto-field { background: #f0f7ff !important; font-weight: bold; color: var(--primary); }
         .btn-action { grid-column: 1 / -1; display: flex; gap: 15px; }
         .btn-action button { flex: 1; padding: 16px; font-weight: 700; border:none; border-radius:12px; color:white; cursor:pointer; font-size: 1rem; }
-        
-        /* Search Bar Style */
         .search-container { margin-bottom: 15px; }
         .search-container input { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #ddd; font-size: 1rem; box-sizing: border-box; outline: none; transition: 0.3s; }
         .search-container input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(0,46,91,0.1); }
-
         .table-wrap { overflow-x: auto; background: white; border-radius: 20px; max-height: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; min-width: 2500px; } /* Increased width for more columns */
+        table { width: 100%; border-collapse: collapse; min-width: 2800px; }
         th { background: var(--primary); color: white; padding: 18px 12px; font-size: 11px; text-align: left; position: sticky; top: 0; z-index: 10; }
         td { padding: 15px 12px; border-bottom: 1px solid #f0f0f0; font-size: 12px; white-space: nowrap; }
         .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; }
@@ -111,16 +108,18 @@
         <div class="input-group"><label>To</label><input type="text" id="sTo"></div>
         <div class="input-group"><label>Party Name</label><input type="text" id="sPName"></div>
         <div class="input-group"><label>Party Charge</label><input type="number" id="sCharge" oninput="surajCalc()"></div>
-        <div class="input-group"><label>Party Adv</label><input type="number" id="sPAdv" oninput="surajCalc()"></div>
-        <div class="input-group"><label>Party Pend</label><input type="number" id="sPPend" class="auto-field" readonly></div>
+        <div class="input-group"><label>GST (18%)</label><input type="number" id="sGST" class="auto-field" readonly></div>
+        <div class="input-group"><label>Total Bill</label><input type="number" id="sTotalBill" class="auto-field" readonly></div>
+        <div class="input-group"><label>Party Pending</label><input type="number" id="sPPend"></div>
         <div class="input-group"><label>Truck Hire</label><input type="number" id="sHire" oninput="surajCalc()"></div>
-        <div class="input-group"><label>Driver Adv</label><input type="number" id="sDAdv" oninput="surajCalc()"></div>
-        <div class="input-group"><label>Driver Pend</label><input type="number" id="sDPend" class="auto-field" readonly></div>
-        <div class="input-group"><label>Toll</label><input type="number" id="sToll"></div>
-        <div class="input-group"><label>Diesel</label><input type="number" id="sDiesel"></div>
+        <div class="input-group"><label>Toll</label><input type="number" id="sToll" oninput="surajCalc()"></div>
+        <div class="input-group"><label>Diesel</label><input type="number" id="sDiesel" oninput="surajCalc()"></div>
         <div class="input-group"><label>KM</label><input type="number" id="sKM"></div>
-        <div class="input-group"><label>Broker Adv</label><input type="number" id="sBAdv"></div>
+        <div class="input-group"><label>Broker Adv</label><input type="number" id="sBAdv" oninput="surajCalc()"></div>
+        <div class="input-group"><label>Broker Pend</label><input type="number" id="sBPend" class="auto-field" readonly></div>
         <div class="input-group"><label>Weight</label><input type="text" id="sWeight"></div>
+        <div class="input-group"><label>Box</label><input type="number" id="sBox"></div>
+        <div class="input-group"><label>Vehicle</label><input type="text" id="sVehicle"></div>
         <div class="input-group" style="display:none;"><label>Profit</label><input type="number" id="sProfit" class="auto-field" readonly></div>
         <div class="btn-action">
             <button id="sSaveBtn" onclick="saveSuraj()" style="background:var(--suraj);">SAVE SURAJ RECORD</button>
@@ -154,11 +153,12 @@
     let db = {C1:[], C2:[], C3:[], C4:[], C5:[], C6:[]};
 
     const formatINR = (amt) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amt);
+    const formatDate = (d) => d ? d.split("-").reverse().join("-") : "-";
 
     function cloudLogin() {
         const phone = document.getElementById('userPhone').value;
         if(phone.length < 10) return alert("Phone number sahi se dalein!");
-        currentUserKey = "cargonix_v10_" + phone;
+        currentUserKey = "cargonix_v12_" + phone;
         let saved = localStorage.getItem(currentUserKey);
         if(saved) db = JSON.parse(saved);
         document.getElementById('login-screen').style.display = 'none';
@@ -202,11 +202,16 @@
 
     function surajCalc() {
         let charge = parseFloat(document.getElementById('sCharge').value) || 0;
-        let pAdv = parseFloat(document.getElementById('sPAdv').value) || 0;
         let hire = parseFloat(document.getElementById('sHire').value) || 0;
-        let dAdv = parseFloat(document.getElementById('sDAdv').value) || 0;
-        document.getElementById('sPPend').value = (charge - pAdv).toFixed(0);
-        document.getElementById('sDPend').value = (hire - dAdv).toFixed(0);
+        let toll = parseFloat(document.getElementById('sToll').value) || 0;
+        let diesel = parseFloat(document.getElementById('sDiesel').value) || 0;
+        let bAdv = parseFloat(document.getElementById('sBAdv').value) || 0;
+
+        document.getElementById('sGST').value = (charge * 0.18).toFixed(0);
+        document.getElementById('sTotalBill').value = (charge * 1.18).toFixed(0);
+        
+        // Calculation: Hire - Toll - Diesel - Broker Adv = Pending
+        document.getElementById('sBPend').value = (hire - toll - diesel - bAdv).toFixed(0);
         document.getElementById('sProfit').value = (charge - hire).toFixed(0);
     }
 
@@ -217,7 +222,6 @@
         document.getElementById('viewTitle').innerText = name;
         document.getElementById('surajForm').style.display = (id === 'C6') ? 'grid' : 'none';
         document.getElementById('standardForm').style.display = (id === 'C6') ? 'none' : 'grid';
-        document.getElementById('searchInput').value = ''; // Reset search
         clearForm();
         renderTable();
     }
@@ -236,8 +240,8 @@
             box: document.getElementById('fBox').value, veh: document.getElementById('fVehicle').value, 
             profit: document.getElementById('fProfit').value
         };
-        if(!db[activeID]) db[activeID] = [];
-        if(idx === -1) db[activeID].unshift(row); else db[activeID][idx] = row;
+        if(idx === -1) db[activeID].push(row); else db[activeID][idx] = row;
+        db[activeID].sort((a,b) => new Date(a.date) - new Date(b.date));
         finishSave();
     }
 
@@ -247,15 +251,16 @@
             date: document.getElementById('sDate').value, bilty: document.getElementById('sBilty').value,
             from: document.getElementById('sFrom').value, to: document.getElementById('sTo').value,
             pName: document.getElementById('sPName').value, charge: document.getElementById('sCharge').value,
-            pAdv: document.getElementById('sPAdv').value, pPend: document.getElementById('sPPend').value, 
-            hire: document.getElementById('sHire').value, dAdv: document.getElementById('sDAdv').value,
-            dPend: document.getElementById('sDPend').value, toll: document.getElementById('sToll').value,
-            diesel: document.getElementById('sDiesel').value, km: document.getElementById('sKM').value,
-            bAdv: document.getElementById('sBAdv').value, weight: document.getElementById('sWeight').value,
+            gst: document.getElementById('sGST').value, totalBill: document.getElementById('sTotalBill').value,
+            pPend: document.getElementById('sPPend').value, hire: document.getElementById('sHire').value,
+            toll: document.getElementById('sToll').value, diesel: document.getElementById('sDiesel').value,
+            km: document.getElementById('sKM').value, bAdv: document.getElementById('sBAdv').value,
+            bPend: document.getElementById('sBPend').value, weight: document.getElementById('sWeight').value,
+            box: document.getElementById('sBox').value, veh: document.getElementById('sVehicle').value,
             profit: document.getElementById('sProfit').value
         };
-        if(!db.C6) db.C6 = [];
-        if(idx === -1) db.C6.unshift(row); else db.C6[idx] = row;
+        if(idx === -1) db.C6.push(row); else db.C6[idx] = row;
+        db.C6.sort((a,b) => new Date(a.date) - new Date(b.date));
         finishSave();
     }
 
@@ -274,33 +279,15 @@
         if(!db[activeID]) return;
 
         if(activeID === 'C6') {
-            head.innerHTML = `<tr><th>Date</th><th>Bilty No</th><th>From</th><th>To</th><th>Party Name</th><th>Charge</th><th>P.Adv</th><th>P.Pend</th><th>Hire</th><th>D.Adv</th><th>D.Pend</th><th>Toll</th><th>Diesel</th><th>KM</th><th>B.Adv</th><th>Weight</th><th>Profit</th><th>Actions</th></tr>`;
+            head.innerHTML = `<tr><th>Date</th><th>Bilty No</th><th>From</th><th>To</th><th>Party Name</th><th>Charge</th><th>GST</th><th>Total Bill</th><th>P.Pend</th><th>Hire</th><th>Toll</th><th>Diesel</th><th>KM</th><th>B.Adv</th><th>B.Pend</th><th>Weight</th><th>Box</th><th>Vehicle</th><th>Profit</th><th>Actions</th></tr>`;
             db.C6.forEach((r, idx) => {
-                body.innerHTML += `<tr><td>${r.date}</td><td>${r.bilty}</td><td>${r.from}</td><td>${r.to}</td><td>${r.pName}</td><td>${r.charge}</td><td>${r.pAdv}</td><td class="badge-pending">${r.pPend}</td><td>${r.hire}</td><td>${r.dAdv}</td><td>${r.dPend}</td><td>${r.toll}</td><td>${r.diesel}</td><td>${r.km}</td><td>${r.bAdv}</td><td>${r.weight}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editSuraj(${idx})">✏️</button><button class="btn-del" onclick="delR(${idx})">🗑️</button></td></tr>`;
+                body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.from}</td><td>${r.to}</td><td>${r.pName}</td><td>${r.charge}</td><td>${r.gst}</td><td>${r.totalBill}</td><td class="badge-pending">${r.pPend}</td><td>${r.hire}</td><td>${r.toll}</td><td>${r.diesel}</td><td>${r.km}</td><td>${r.bAdv}</td><td class="badge-pending">${r.bPend}</td><td>${r.weight}</td><td>${r.box}</td><td>${r.veh}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editSuraj(${idx})">✏️</button><button class="btn-del" onclick="delR(${idx})">🗑️</button></td></tr>`;
             });
         } else {
             head.innerHTML = `<tr><th>Date</th><th>Bilty No</th><th>Bill No</th><th>From</th><th>To</th><th>Party Charge</th><th>GST</th><th>Total Bill</th><th>P.Pend</th><th>Hire</th><th>Loading</th><th>Truck Total</th><th>Adv</th><th>Brok Pend</th><th>Clear Date</th><th>Weight</th><th>Box</th><th>Vehicle</th><th>Profit</th><th>Actions</th></tr>`;
             db[activeID].forEach((r, idx) => {
-                body.innerHTML += `<tr><td>${r.date}</td><td>${r.bilty}</td><td>${r.bill}</td><td>${r.from}</td><td>${r.to}</td><td>${r.charge}</td><td>${r.gst}</td><td>${r.totalBill}</td><td class="badge-pending">${r.fPartyPending}</td><td>${r.hire}</td><td>${r.loading}</td><td>${r.truckTotal}</td><td>${r.adv}</td><td>${r.bPend}</td><td>${r.clearDate}</td><td>${r.weight}</td><td>${r.box}</td><td>${r.veh}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editStd(${idx})">✏️</button><button class="btn-del" onclick="delR(${idx})">🗑️</button></td></tr>`;
+                body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.bill}</td><td>${r.from}</td><td>${r.to}</td><td>${r.charge}</td><td>${r.gst}</td><td>${r.totalBill}</td><td class="badge-pending">${r.fPartyPending}</td><td>${r.hire}</td><td>${r.loading}</td><td>${r.truckTotal}</td><td>${r.adv}</td><td class="badge-pending">${r.bPend}</td><td>${formatDate(r.clearDate)}</td><td>${r.weight}</td><td>${r.box}</td><td>${r.veh}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editStd(${idx})">✏️</button><button class="btn-del" onclick="delR(${idx})">🗑️</button></td></tr>`;
             });
-        }
-    }
-
-    // SEARCH FUNCTIONALITY
-    function searchTable() {
-        let input = document.getElementById('searchInput').value.toUpperCase();
-        let table = document.getElementById('mainTable');
-        let tr = table.getElementsByTagName('tr');
-
-        for (let i = 1; i < tr.length; i++) {
-            let found = false;
-            let td = tr[i].getElementsByTagName('td');
-            for (let j = 0; j < td.length - 1; j++) { // exclude actions column
-                if (td[j] && td[j].innerHTML.toUpperCase().indexOf(input) > -1) {
-                    found = true;
-                }
-            }
-            tr[i].style.display = found ? "" : "none";
         }
     }
 
@@ -335,25 +322,33 @@
         document.getElementById('sTo').value = r.to;
         document.getElementById('sPName').value = r.pName;
         document.getElementById('sCharge').value = r.charge;
-        document.getElementById('sPAdv').value = r.pAdv;
+        document.getElementById('sPPend').value = r.pPend;
         document.getElementById('sHire').value = r.hire;
-        document.getElementById('sDAdv').value = r.dAdv;
         document.getElementById('sToll').value = r.toll;
         document.getElementById('sDiesel').value = r.diesel;
         document.getElementById('sKM').value = r.km;
         document.getElementById('sBAdv').value = r.bAdv;
         document.getElementById('sWeight').value = r.weight;
+        document.getElementById('sBox').value = r.box;
+        document.getElementById('sVehicle').value = r.veh;
         surajCalc();
         document.getElementById('sSaveBtn').innerText = "UPDATE SURAJ";
         document.getElementById('sCancelBtn').style.display = "block";
     }
 
-    function delR(idx) {
-        if(confirm("Delete?")) {
-            db[activeID].splice(idx, 1);
-            finishSave();
+    function searchTable() {
+        let input = document.getElementById('searchInput').value.toUpperCase();
+        let tr = document.getElementById('mainTable').getElementsByTagName('tr');
+        for (let i = 1; i < tr.length; i++) {
+            let found = false, td = tr[i].getElementsByTagName('td');
+            for (let j = 0; j < td.length - 1; j++) {
+                if (td[j] && td[j].innerHTML.toUpperCase().indexOf(input) > -1) found = true;
+            }
+            tr[i].style.display = found ? "" : "none";
         }
     }
+
+    function delR(idx) { if(confirm("Delete?")) { db[activeID].splice(idx, 1); finishSave(); } }
 
     function clearForm() {
         document.querySelectorAll('input').forEach(i => { if(i.type !== 'hidden') i.value = '' });
