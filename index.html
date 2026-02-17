@@ -22,7 +22,8 @@
         .company-card { background: white; padding: 30px; border-radius: 18px; cursor: pointer; transition: 0.3s; border-left: 10px solid var(--primary); box-shadow: 0 6px 15px rgba(0,0,0,0.05); }
         .company-card:hover { transform: translateY(-8px); box-shadow: 0 12px 30px rgba(0,0,0,0.15); border-left-color: var(--accent); }
         .company-card h3 { margin: 0 0 10px 0; color: var(--primary); border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 1.1rem; }
-        .comp-stats { display: flex; justify-content: space-between; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; font-size: 0.9rem; }
+        .comp-stats { display: flex; flex-direction: column; gap: 5px; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; font-size: 0.85rem; }
+        .stat-row { display: flex; justify-content: space-between; }
         #ledger-section { display: none; padding: 30px; }
         .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; background: white; padding: 30px; border-radius: 20px; margin-bottom: 30px; box-shadow: 0 4px 25px rgba(0,0,0,0.08); }
@@ -36,7 +37,7 @@
         .search-container input { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #ddd; font-size: 1rem; box-sizing: border-box; outline: none; transition: 0.3s; }
         .search-container input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(0,46,91,0.1); }
         .table-wrap { overflow-x: auto; background: white; border-radius: 20px; max-height: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; min-width: 2800px; }
+        table { width: 100%; border-collapse: collapse; min-width: 3000px; }
         th { background: var(--primary); color: white; padding: 18px 12px; font-size: 11px; text-align: left; position: sticky; top: 0; z-index: 10; }
         td { padding: 15px 12px; border-bottom: 1px solid #f0f0f0; font-size: 12px; white-space: nowrap; }
         .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; }
@@ -85,8 +86,9 @@
         <div class="input-group"><label>Total Bill</label><input type="number" id="fTotalBill" class="auto-field" readonly></div>
         <div class="input-group"><label>Party Pending</label><input type="number" id="fPartyPending"></div>
         <div class="input-group"><label>Truck Hire</label><input type="number" id="fTruckHire" oninput="stdCalc()"></div>
-        <div class="input-group"><label>Loading</label><input type="number" id="fLoading" oninput="stdCalc()"></div>
+        <div class="input-group"><label>Porter & Loading</label><input type="number" id="fLoading" oninput="stdCalc()"></div>
         <div class="input-group"><label>Truck Total</label><input type="number" id="fTruckTotal" class="auto-field" readonly></div>
+        <div class="input-group"><label>Broker Name</label><input type="text" id="fBrokerName"></div>
         <div class="input-group"><label>Adv</label><input type="number" id="fAdv" oninput="stdCalc()"></div>
         <div class="input-group"><label>Brok Pending</label><input type="number" id="fPending" class="auto-field" readonly></div>
         <div class="input-group"><label>Clear Date</label><input type="date" id="fClearDate"></div>
@@ -128,7 +130,7 @@
     </div>
 
     <div class="search-container">
-        <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="🔍 Search by Bilty No, Vehicle, Bill No or Route...">
+        <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="🔍 Search by Bilty No, Vehicle, Bill No, Broker or Route...">
     </div>
 
     <div class="table-wrap">
@@ -170,18 +172,22 @@
         const grid = document.getElementById('compGrid');
         grid.innerHTML = '';
         companies.forEach(c => {
-            let p = 0, n = 0;
+            let p = 0, n = 0, bAdv = 0, bPend = 0;
             if(db[c.id]) {
                 db[c.id].forEach(r => { 
                     p += parseFloat(r.profit) || 0; 
-                    n += parseFloat(r.fPartyPending || r.pPend || 0); 
+                    n += parseFloat(r.fPartyPending || r.pPend || 0);
+                    bAdv += parseFloat(r.adv || r.bAdv || 0); // Broker Adv Total
+                    bPend += parseFloat(r.bPend || 0); // Broker Pend Total
                 });
             }
             grid.innerHTML += `<div class="company-card" onclick="openLedger('${c.id}', '${c.name}')">
                 <h3>${c.name}</h3>
                 <div class="comp-stats">
-                    <span>Profit: <b style="color:var(--success)">${formatINR(p)}</b></span>
-                    <span>Pend: <b style="color:var(--danger)">${formatINR(n)}</b></span>
+                    <div class="stat-row"><span>Profit:</span> <b style="color:var(--success)">${formatINR(p)}</b></div>
+                    <div class="stat-row"><span>Party Pend:</span> <b style="color:var(--danger)">${formatINR(n)}</b></div>
+                    <div class="stat-row"><span>Brok Adv:</span> <b style="color:#2980b9">${formatINR(bAdv)}</b></div>
+                    <div class="stat-row"><span>Brok Pend:</span> <b style="color:#e67e22">${formatINR(bPend)}</b></div>
                 </div>
             </div>`;
         });
@@ -208,7 +214,6 @@
         document.getElementById('sGST').value = (charge * 0.18).toFixed(0);
         document.getElementById('sTotalBill').value = (charge * 1.18).toFixed(0);
         
-        // Updated Calculation: Only Truck Hire - Broker Adv = Pending
         document.getElementById('sBPend').value = (hire - bAdv).toFixed(0);
         document.getElementById('sProfit').value = (charge - hire).toFixed(0);
     }
@@ -227,15 +232,25 @@
     function saveEntry() {
         const idx = parseInt(document.getElementById('editIndex').value);
         const row = {
-            date: document.getElementById('fDate').value, bilty: document.getElementById('fBilty').value,
-            bill: document.getElementById('fBill').value, from: document.getElementById('fFrom').value,
-            to: document.getElementById('fTo').value, charge: document.getElementById('fPartyCharge').value,
-            gst: document.getElementById('fGST').value, totalBill: document.getElementById('fTotalBill').value,
-            fPartyPending: document.getElementById('fPartyPending').value, hire: document.getElementById('fTruckHire').value,
-            loading: document.getElementById('fLoading').value, truckTotal: document.getElementById('fTruckTotal').value,
-            adv: document.getElementById('fAdv').value, bPend: document.getElementById('fPending').value,
-            clearDate: document.getElementById('fClearDate').value, weight: document.getElementById('fWeight').value,
-            box: document.getElementById('fBox').value, veh: document.getElementById('fVehicle').value, 
+            date: document.getElementById('fDate').value, 
+            bilty: document.getElementById('fBilty').value,
+            bill: document.getElementById('fBill').value, 
+            from: document.getElementById('fFrom').value,
+            to: document.getElementById('fTo').value, 
+            charge: document.getElementById('fPartyCharge').value,
+            gst: document.getElementById('fGST').value, 
+            totalBill: document.getElementById('fTotalBill').value,
+            fPartyPending: document.getElementById('fPartyPending').value, 
+            hire: document.getElementById('fTruckHire').value,
+            loading: document.getElementById('fLoading').value, 
+            truckTotal: document.getElementById('fTruckTotal').value,
+            brokerName: document.getElementById('fBrokerName').value,
+            adv: document.getElementById('fAdv').value, 
+            bPend: document.getElementById('fPending').value,
+            clearDate: document.getElementById('fClearDate').value, 
+            weight: document.getElementById('fWeight').value,
+            box: document.getElementById('fBox').value, 
+            veh: document.getElementById('fVehicle').value, 
             profit: document.getElementById('fProfit').value
         };
         if(idx === -1) db[activeID].push(row); else db[activeID][idx] = row;
@@ -246,15 +261,24 @@
     function saveSuraj() {
         const idx = parseInt(document.getElementById('sEditIndex').value);
         const row = {
-            date: document.getElementById('sDate').value, bilty: document.getElementById('sBilty').value,
-            from: document.getElementById('sFrom').value, to: document.getElementById('sTo').value,
-            pName: document.getElementById('sPName').value, charge: document.getElementById('sCharge').value,
-            gst: document.getElementById('sGST').value, totalBill: document.getElementById('sTotalBill').value,
-            pPend: document.getElementById('sPPend').value, hire: document.getElementById('sHire').value,
-            toll: document.getElementById('sToll').value, diesel: document.getElementById('sDiesel').value,
-            km: document.getElementById('sKM').value, bAdv: document.getElementById('sBAdv').value,
-            bPend: document.getElementById('sBPend').value, weight: document.getElementById('sWeight').value,
-            box: document.getElementById('sBox').value, veh: document.getElementById('sVehicle').value,
+            date: document.getElementById('sDate').value, 
+            bilty: document.getElementById('sBilty').value,
+            from: document.getElementById('sFrom').value, 
+            to: document.getElementById('sTo').value,
+            pName: document.getElementById('sPName').value, 
+            charge: document.getElementById('sCharge').value,
+            gst: document.getElementById('sGST').value, 
+            totalBill: document.getElementById('sTotalBill').value,
+            pPend: document.getElementById('sPPend').value, 
+            hire: document.getElementById('sHire').value,
+            toll: document.getElementById('sToll').value, 
+            diesel: document.getElementById('sDiesel').value,
+            km: document.getElementById('sKM').value, 
+            bAdv: document.getElementById('sBAdv').value,
+            bPend: document.getElementById('sBPend').value, 
+            weight: document.getElementById('sWeight').value,
+            box: document.getElementById('sBox').value, 
+            veh: document.getElementById('sVehicle').value,
             profit: document.getElementById('sProfit').value
         };
         if(idx === -1) db.C6.push(row); else db.C6[idx] = row;
@@ -282,9 +306,9 @@
                 body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.from}</td><td>${r.to}</td><td>${r.pName}</td><td>${r.charge}</td><td>${r.gst}</td><td>${r.totalBill}</td><td class="badge-pending">${r.pPend}</td><td>${r.hire}</td><td>${r.toll}</td><td>${r.diesel}</td><td>${r.km}</td><td>${r.bAdv}</td><td class="badge-pending">${r.bPend}</td><td>${r.weight}</td><td>${r.box}</td><td>${r.veh}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editSuraj(${idx})">✏️</button><button class="btn-del" onclick="delR(${idx})">🗑️</button></td></tr>`;
             });
         } else {
-            head.innerHTML = `<tr><th>Date</th><th>Bilty No</th><th>Bill No</th><th>From</th><th>To</th><th>Party Charge</th><th>GST</th><th>Total Bill</th><th>P.Pend</th><th>Hire</th><th>Loading</th><th>Truck Total</th><th>Adv</th><th>Brok Pend</th><th>Clear Date</th><th>Weight</th><th>Box</th><th>Vehicle</th><th>Profit</th><th>Actions</th></tr>`;
+            head.innerHTML = `<tr><th>Date</th><th>Bilty No</th><th>Bill No</th><th>From</th><th>To</th><th>Party Charge</th><th>GST</th><th>Total Bill</th><th>P.Pend</th><th>Hire</th><th>Porter & Loading</th><th>Truck Total</th><th>Broker Name</th><th>Adv</th><th>Brok Pend</th><th>Clear Date</th><th>Weight</th><th>Box</th><th>Vehicle</th><th>Profit</th><th>Actions</th></tr>`;
             db[activeID].forEach((r, idx) => {
-                body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.bill}</td><td>${r.from}</td><td>${r.to}</td><td>${r.charge}</td><td>${r.gst}</td><td>${r.totalBill}</td><td class="badge-pending">${r.fPartyPending}</td><td>${r.hire}</td><td>${r.loading}</td><td>${r.truckTotal}</td><td>${r.adv}</td><td class="badge-pending">${r.bPend}</td><td>${formatDate(r.clearDate)}</td><td>${r.weight}</td><td>${r.box}</td><td>${r.veh}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editStd(${idx})">✏️</button><button class="btn-del" onclick="delR(${idx})">🗑️</button></td></tr>`;
+                body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.bill}</td><td>${r.from}</td><td>${r.to}</td><td>${r.charge}</td><td>${r.gst}</td><td>${r.totalBill}</td><td class="badge-pending">${r.fPartyPending}</td><td>${r.hire}</td><td>${r.loading}</td><td>${r.truckTotal}</td><td>${r.brokerName || '-'}</td><td>${r.adv}</td><td class="badge-pending">${r.bPend}</td><td>${formatDate(r.clearDate)}</td><td>${r.weight}</td><td>${r.box}</td><td>${r.veh}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editStd(${idx})">✏️</button><button class="btn-del" onclick="delR(${idx})">🗑️</button></td></tr>`;
             });
         }
     }
@@ -301,6 +325,7 @@
         document.getElementById('fPartyPending').value = r.fPartyPending;
         document.getElementById('fTruckHire').value = r.hire;
         document.getElementById('fLoading').value = r.loading;
+        document.getElementById('fBrokerName').value = r.brokerName || '';
         document.getElementById('fAdv').value = r.adv;
         document.getElementById('fClearDate').value = r.clearDate;
         document.getElementById('fWeight').value = r.weight;
