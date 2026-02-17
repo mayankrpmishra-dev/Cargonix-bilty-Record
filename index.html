@@ -7,7 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #002e5b; --accent: #f39c12; --success: #27ae60; --danger: #c0392b; --suraj: #8e44ad; }
+        :root { --primary: #002e5b; --accent: #f39c12; --success: #27ae60; --danger: #c0392b; --suraj: #8e44ad; --info: #2980b9; }
         body { font-family: 'Poppins', sans-serif; background: #f4f7f6; margin: 0; color: #333; }
         #login-screen { position: fixed; inset: 0; background: var(--primary); display: flex; align-items: center; justify-content: center; z-index: 9999; color: white; padding: 20px; }
         .login-box { background: white; color: #333; padding: 30px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
@@ -15,15 +15,15 @@
         .login-box button { width: 100%; padding: 15px; background: var(--accent); border: none; border-radius: 10px; color: white; font-weight: 700; cursor: pointer; }
         .header-main { background: var(--primary); color: white; text-align: center; padding: 40px 20px 70px; border-bottom: 5px solid var(--accent); }
         .header-main h1 { margin: 0; font-size: 2.2rem; font-weight: 800; letter-spacing: 1px; }
-        .stats-container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: -50px auto 30px; max-width: 1100px; padding: 0 20px; }
-        .stat-box { background: white; flex: 1; min-width: 280px; padding: 25px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.15); text-align: center; border-top: 6px solid var(--accent); }
-        .stat-val { font-size: 2rem; font-weight: 800; color: var(--primary); }
+        .stats-container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: -50px auto 30px; max-width: 1200px; padding: 0 20px; }
+        .stat-box { background: white; flex: 1; min-width: 250px; padding: 20px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.15); text-align: center; border-top: 6px solid var(--accent); }
+        .stat-val { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
         .company-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; padding: 20px; max-width: 1400px; margin: auto; }
-        .company-card { background: white; padding: 30px; border-radius: 18px; cursor: pointer; transition: 0.3s; border-left: 10px solid var(--primary); box-shadow: 0 6px 15px rgba(0,0,0,0.05); }
+        .company-card { background: white; padding: 25px; border-radius: 18px; cursor: pointer; transition: 0.3s; border-left: 10px solid var(--primary); box-shadow: 0 6px 15px rgba(0,0,0,0.05); }
         .company-card:hover { transform: translateY(-8px); box-shadow: 0 12px 30px rgba(0,0,0,0.15); border-left-color: var(--accent); }
-        .company-card h3 { margin: 0 0 10px 0; color: var(--primary); border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 1.1rem; }
-        .comp-stats { display: flex; flex-direction: column; gap: 5px; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; font-size: 0.85rem; }
-        .stat-row { display: flex; justify-content: space-between; }
+        .company-card h3 { margin: 0 0 10px 0; color: var(--primary); border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 1rem; height: 40px; overflow: hidden; }
+        .comp-stats { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; font-size: 0.85rem; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
         #ledger-section { display: none; padding: 30px; }
         .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; background: white; padding: 30px; border-radius: 20px; margin-bottom: 30px; box-shadow: 0 4px 25px rgba(0,0,0,0.08); }
@@ -34,8 +34,7 @@
         .btn-action { grid-column: 1 / -1; display: flex; gap: 15px; }
         .btn-action button { flex: 1; padding: 16px; font-weight: 700; border:none; border-radius:12px; color:white; cursor:pointer; font-size: 1rem; }
         .search-container { margin-bottom: 15px; }
-        .search-container input { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #ddd; font-size: 1rem; box-sizing: border-box; outline: none; transition: 0.3s; }
-        .search-container input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(0,46,91,0.1); }
+        .search-container input { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #ddd; font-size: 1rem; box-sizing: border-box; outline: none; }
         .table-wrap { overflow-x: auto; background: white; border-radius: 20px; max-height: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; min-width: 3000px; }
         th { background: var(--primary); color: white; padding: 18px 12px; font-size: 11px; text-align: left; position: sticky; top: 0; z-index: 10; }
@@ -61,8 +60,9 @@
 <div id="landing-page" style="display:none">
     <div class="header-main"><h1>CARGONIX MOVERS PVT. LTD.</h1></div>
     <div class="stats-container">
-        <div class="stat-box"><h2>Total Net Profit</h2><div class="stat-val" id="gTotal">₹ 0</div></div>
-        <div class="stat-box" style="border-top-color: var(--danger);"><h2>Total Party Pending</h2><div class="stat-val" id="gPend" style="color:var(--danger)">₹ 0</div></div>
+        <div class="stat-box"><h4>Total Profit (With GST)</h4><div class="stat-val" id="gTotal">₹ 0</div></div>
+        <div class="stat-box" style="border-top-color: var(--success);"><h4>Without GST Profit</h4><div class="stat-val" id="gTotalNoGst" style="color:var(--success)">₹ 0</div></div>
+        <div class="stat-box" style="border-top-color: var(--danger);"><h4>Total Party Pending</h4><div class="stat-val" id="gPend" style="color:var(--danger)">₹ 0</div></div>
     </div>
     <div class="company-grid" id="compGrid"></div>
 </div>
@@ -144,15 +144,17 @@
 <script>
     let activeID = '';
     let currentUserKey = '';
+    // Companies list updated: Suraj Yadev moved to top, Avinya added.
     const companies = [
+        {id:'C6', name:'SURAJ YADEV (W.B)'},
         {id:'C1', name:'AKASA CLEAN ENERGY PRIVATE LIMITED'}, 
         {id:'C2', name:'CLN ENERGY LIMITED'},
         {id:'C3', name:'MEFRON TECHNOLOGIES INDIA PVT LTD'}, 
         {id:'C4', name:'ABILITY AUTOMATION SOLUTIONS PVT LTD'},
         {id:'C5', name:'PREMIER PAPER PACKAGING PVT LTD'},
-        {id:'C6', name:'SURAJ YADEV (W.B)'}
+        {id:'C7', name:'AVINYA BATTERIES LIMITED'}
     ];
-    let db = {C1:[], C2:[], C3:[], C4:[], C5:[], C6:[]};
+    let db = {C1:[], C2:[], C3:[], C4:[], C5:[], C6:[], C7:[]};
 
     const formatINR = (amt) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amt);
     const formatDate = (d) => d ? d.split("-").reverse().join("-") : "-";
@@ -172,19 +174,23 @@
         const grid = document.getElementById('compGrid');
         grid.innerHTML = '';
         companies.forEach(c => {
-            let p = 0, n = 0, bAdv = 0, bPend = 0;
+            let p = 0, n = 0, bAdv = 0, bPend = 0, gstTotal = 0;
             if(db[c.id]) {
                 db[c.id].forEach(r => { 
                     p += parseFloat(r.profit) || 0; 
                     n += parseFloat(r.fPartyPending || r.pPend || 0);
-                    bAdv += parseFloat(r.adv || r.bAdv || 0); // Broker Adv Total
-                    bPend += parseFloat(r.bPend || 0); // Broker Pend Total
+                    bAdv += parseFloat(r.adv || r.bAdv || 0);
+                    bPend += parseFloat(r.bPend || 0);
+                    gstTotal += parseFloat(r.gst || 0);
                 });
             }
+            let profitNoGst = p - gstTotal;
+
             grid.innerHTML += `<div class="company-card" onclick="openLedger('${c.id}', '${c.name}')">
                 <h3>${c.name}</h3>
                 <div class="comp-stats">
-                    <div class="stat-row"><span>Profit:</span> <b style="color:var(--success)">${formatINR(p)}</b></div>
+                    <div class="stat-row"><span>Profit (With GST):</span> <b style="color:var(--success)">${formatINR(p)}</b></div>
+                    <div class="stat-row"><span>Without GST Profit:</span> <b style="color:var(--info)">${formatINR(profitNoGst)}</b></div>
                     <div class="stat-row"><span>Party Pend:</span> <b style="color:var(--danger)">${formatINR(n)}</b></div>
                     <div class="stat-row"><span>Brok Adv:</span> <b style="color:#2980b9">${formatINR(bAdv)}</b></div>
                     <div class="stat-row"><span>Brok Pend:</span> <b style="color:#e67e22">${formatINR(bPend)}</b></div>
@@ -203,19 +209,18 @@
         document.getElementById('fTotalBill').value = (charge * 1.18).toFixed(0);
         document.getElementById('fTruckTotal').value = (hire + loading).toFixed(0);
         document.getElementById('fPending').value = (hire + loading - adv).toFixed(0);
-        document.getElementById('fProfit').value = (charge - (hire + loading)).toFixed(0);
+        // Profit with GST logic
+        document.getElementById('fProfit').value = ((charge * 1.18) - (hire + loading)).toFixed(0);
     }
 
     function surajCalc() {
         let charge = parseFloat(document.getElementById('sCharge').value) || 0;
         let hire = parseFloat(document.getElementById('sHire').value) || 0;
         let bAdv = parseFloat(document.getElementById('sBAdv').value) || 0;
-
         document.getElementById('sGST').value = (charge * 0.18).toFixed(0);
         document.getElementById('sTotalBill').value = (charge * 1.18).toFixed(0);
-        
         document.getElementById('sBPend').value = (hire - bAdv).toFixed(0);
-        document.getElementById('sProfit').value = (charge - hire).toFixed(0);
+        document.getElementById('sProfit').value = ((charge * 1.18) - hire).toFixed(0);
     }
 
     function openLedger(id, name) {
@@ -384,11 +389,18 @@
     }
 
     function updateStats() {
-        let tp = 0, tn = 0;
+        let tp = 0, tn = 0, tgst = 0;
         companies.forEach(c => {
-            if(db[c.id]) db[c.id].forEach(r => { tp += parseFloat(r.profit) || 0; tn += parseFloat(r.fPartyPending || r.pPend || 0); });
+            if(db[c.id]) {
+                db[c.id].forEach(r => { 
+                    tp += parseFloat(r.profit) || 0; 
+                    tn += parseFloat(r.fPartyPending || r.pPend || 0); 
+                    tgst += parseFloat(r.gst || 0);
+                });
+            }
         });
         document.getElementById('gTotal').innerText = formatINR(tp);
+        document.getElementById('gTotalNoGst').innerText = formatINR(tp - tgst);
         document.getElementById('gPend').innerText = formatINR(tn);
     }
 
