@@ -218,27 +218,71 @@
     }
 
     function init() {
-        const grid = document.getElementById('compGrid');
-        const selectedMonth = document.getElementById('dashMonthFilter').value;
-        grid.innerHTML = '';
+    const grid = document.getElementById('compGrid');
+    const selectedMonth = document.getElementById('dashMonthFilter').value;
+    grid.innerHTML = '';
 
-        companies.forEach(c => {
-            let p = 0, n = 0, bAdv = 0, bPend = 0, comm = 0;
-            
-            if(db[c.id]) {
-                db[c.id].forEach(r => { 
-                    // Month filter for cards
-                    let recordMonth = r.date ? r.date.split("-")[1] : "";
-                    if (selectedMonth !== "" && recordMonth !== selectedMonth) return;
+    companies.forEach(c => {
+        // gst variable add kiya gaya hai track karne ke liye
+        let p = 0, n = 0, bAdv = 0, bPend = 0, comm = 0, gst = 0;
+        
+        if(db[c.id]) {
+            db[c.id].forEach(r => { 
+                // Month filter for cards
+                let recordMonth = r.date ? r.date.split("-")[1] : "";
+                if (selectedMonth !== "" && recordMonth !== selectedMonth) return;
 
-                    p += parseFloat(r.profit || r.amt || 0); 
-                    n += parseFloat(r.fPartyPending || r.pPend || 0);
-                    bAdv += parseFloat(r.adv || r.bAdv || 0);
-                    bPend += parseFloat(r.bPend || 0);
-                    comm += parseFloat(r.commission || 0);
-                });
-            }
+                p += parseFloat(r.profit || r.amt || 0); 
+                n += parseFloat(r.fPartyPending || r.pPend || 0);
+                bAdv += parseFloat(r.adv || r.bAdv || 0);
+                bPend += parseFloat(r.bPend || 0);
+                comm += parseFloat(r.commission || 0);
+                gst += parseFloat(r.gst || 0); // GST amount add kiya
+            });
+        }
 
+        let cardContent = '';
+
+        if (c.id === 'EXP') {
+            // Expense Card mein sirf total spent dikhega
+            cardContent = `<div class="stat-row"><span>Total Spent:</span> <b style="color:var(--danger)">${formatINR(p)}</b></div>`;
+        } 
+        else if (c.id === 'C6') {
+            // Suraj Yadev: Without GST = Profit - GST
+            cardContent = `
+                <div class="stat-row"><span>Profit (With GST):</span> <b style="color:var(--success)">${formatINR(p)}</b></div>
+                <div class="stat-row"><span>Without GST Profit:</span> <b style="color:var(--info)">${formatINR(p - gst)}</b></div>
+                <div class="stat-row"><span>Party Pend:</span> <b style="color:var(--danger)">${formatINR(n)}</b></div>
+                <div class="stat-row" style="border-top: 1px dashed #ccc; margin-top: 5px; padding-top: 5px;">
+                    <span>Brok Adv:</span> <b>${formatINR(bAdv)}</b>
+                </div>
+                <div class="stat-row"><span>Brok Pend:</span> <b style="color:#e67e22">${formatINR(bPend)}</b></div>
+            `;
+        } 
+        else {
+            // Standard Companies: Without GST = Profit - GST - Commission
+            cardContent = `
+                <div class="stat-row"><span>Profit (With GST):</span> <b style="color:var(--success)">${formatINR(p)}</b></div>
+                <div class="stat-row"><span>Without GST Profit:</span> <b style="color:var(--info)">${formatINR(p - gst - comm)}</b></div>
+                <div class="stat-row"><span>Party Pend:</span> <b style="color:var(--danger)">${formatINR(n)}</b></div>
+                <div class="stat-row" style="border-top: 1px dashed #ccc; margin-top: 5px; padding-top: 5px;">
+                    <span>Brok Adv:</span> <b>${formatINR(bAdv)}</b>
+                </div>
+                <div class="stat-row"><span>Brok Pend:</span> <b style="color:#e67e22">${formatINR(bPend)}</b></div>
+                <div class="stat-row"><span>Commission:</span> <b style="color:var(--suraj)">${formatINR(comm)}</b></div>
+            `;
+        }
+
+        grid.innerHTML += `
+        <div class="company-card" onclick="openLedger('${c.id}', '${c.name}')" style="${c.id === 'EXP' ? 'border-left-color:var(--expense)' : ''}">
+            <h3>${c.name}</h3>
+            <div class="comp-stats">
+                ${cardContent}
+            </div>
+        </div>`;
+    });
+    updateStats();
+}
             let cardContent = '';
 
             if (c.id === 'EXP') {
@@ -273,9 +317,9 @@
                     ${cardContent}
                 </div>
             </div>`;
-        });
+;
         updateStats();
-    }
+
 
     function updateStats() {
         let tp = 0, tn = 0, tgst = 0, texp = 0, tcomm = 0;
