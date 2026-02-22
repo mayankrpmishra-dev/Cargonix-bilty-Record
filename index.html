@@ -15,6 +15,12 @@
         .login-box button { width: 100%; padding: 15px; background: var(--accent); border: none; border-radius: 10px; color: white; font-weight: 700; cursor: pointer; }
         .header-main { background: var(--primary); color: white; text-align: center; padding: 40px 20px 70px; border-bottom: 5px solid var(--accent); }
         .header-main h1 { margin: 0; font-size: 2.2rem; font-weight: 800; letter-spacing: 1px; }
+        
+        /* Backup Bar Styling */
+        .backup-section { background: #fff; padding: 15px; text-align: center; border-bottom: 1px solid #ddd; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .btn-backup { background: #2c3e50; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; }
+        .btn-restore { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; }
+
         .stats-container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: -50px auto 30px; max-width: 1200px; padding: 0 20px; }
         .stat-box { background: white; flex: 1; min-width: 200px; padding: 20px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.15); text-align: center; border-top: 6px solid var(--accent); }
         .stat-val { font-size: 1.4rem; font-weight: 800; color: var(--primary); }
@@ -35,21 +41,16 @@
         .btn-action button { flex: 1; padding: 16px; font-weight: 700; border:none; border-radius:12px; color:white; cursor:pointer; font-size: 1rem; }
         .search-container { display: flex; gap: 10px; margin-bottom: 15px; }
         .search-container input, .search-container select { padding: 15px; border-radius: 12px; border: 2px solid #ddd; font-size: 1rem; outline: none; }
-        .search-container input { flex: 2; }
-        .search-container select { flex: 1; }
         .table-wrap { overflow-x: auto; background: white; border-radius: 20px; max-height: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; min-width: 1000px; }
         th { background: var(--primary); color: white; padding: 18px 12px; font-size: 11px; text-align: left; position: sticky; top: 0; z-index: 10; }
         td { padding: 15px 12px; border-bottom: 1px solid #f0f0f0; font-size: 12px; white-space: nowrap; }
-        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; }
-        .badge-profit { background: #e8f5e9; color: #2e7d32; }
-        .badge-pending { background: #ffebee; color: #c62828; }
+        .badge-profit { background: #e8f5e9; color: #2e7d32; font-weight: bold; }
+        .badge-pending { background: #ffebee; color: #c62828; font-weight: bold; }
         .btn-del { background: #e74c3c; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; }
         .btn-edit { background: #3498db; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; margin-right: 5px; }
-        
-        /* New Styles for Dash Filter */
         .dash-filter-wrap { text-align: center; margin: -20px auto 20px; position: relative; z-index: 100; }
-        .dash-filter-wrap select { padding: 12px 25px; border-radius: 12px; border: 2px solid var(--accent); font-family: 'Poppins'; font-weight: 600; cursor: pointer; outline: none; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .dash-filter-wrap select { padding: 12px 25px; border-radius: 12px; border: 2px solid var(--accent); font-family: 'Poppins'; font-weight: 600; cursor: pointer; outline: none; }
     </style>
 </head>
 <body>
@@ -66,6 +67,12 @@
 <div id="landing-page" style="display:none">
     <div class="header-main"><h1>CARGONIX MOVERS PVT. LTD.</h1></div>
     
+    <div class="backup-section">
+        <button class="btn-backup" onclick="exportBackup()">📥 GET BACKUP FILE (Purane Laptop mein click karein)</button>
+        <button class="btn-restore" onclick="document.getElementById('importFile').click()">📤 RESTORE FROM FILE (Naye Laptop mein click karein)</button>
+        <input type="file" id="importFile" style="display:none" onchange="importBackup(event)">
+    </div>
+
     <div class="dash-filter-wrap">
         <select id="dashMonthFilter" onchange="init()">
             <option value="">📊 Lifetime Report (All Months)</option>
@@ -217,124 +224,87 @@
         init();
     }
 
+    // BACKUP & RESTORE LOGIC
+    function exportBackup() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+        const dlAnchor = document.createElement('a');
+        dlAnchor.setAttribute("href", dataStr);
+        dlAnchor.setAttribute("download", "cargonix_full_data.json");
+        dlAnchor.click();
+        alert("Backup file download ho gayi hai!");
+    }
+
+    function importBackup(event) {
+        const file = event.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                db = JSON.parse(e.target.result);
+                localStorage.setItem(currentUserKey, JSON.stringify(db));
+                alert("✅ Data Successfully Restored!");
+                init();
+            } catch(err) { alert("Invalid File!"); }
+        };
+        reader.readAsText(file);
+    }
+
     function init() {
-    const grid = document.getElementById('compGrid');
-    const selectedMonth = document.getElementById('dashMonthFilter').value;
-    grid.innerHTML = '';
+        const grid = document.getElementById('compGrid');
+        const selectedMonth = document.getElementById('dashMonthFilter').value;
+        grid.innerHTML = '';
 
-    companies.forEach(c => {
-        // gst variable add kiya gaya hai track karne ke liye
-        let p = 0, n = 0, bAdv = 0, bPend = 0, comm = 0, gst = 0;
-        
-        if(db[c.id]) {
-            db[c.id].forEach(r => { 
-                // Month filter for cards
-                let recordMonth = r.date ? r.date.split("-")[1] : "";
-                if (selectedMonth !== "" && recordMonth !== selectedMonth) return;
+        companies.forEach(c => {
+            let p = 0, n = 0, bAdv = 0, bPend = 0, comm = 0, gst = 0;
+            if(db[c.id]) {
+                db[c.id].forEach(r => { 
+                    let recordMonth = r.date ? r.date.split("-")[1] : "";
+                    if (selectedMonth !== "" && recordMonth !== selectedMonth) return;
+                    p += parseFloat(r.profit || r.amt || 0); 
+                    n += parseFloat(r.fPartyPending || r.pPend || 0);
+                    bAdv += parseFloat(r.adv || r.bAdv || 0);
+                    bPend += parseFloat(r.bPend || 0);
+                    comm += parseFloat(r.commission || 0);
+                    gst += parseFloat(r.gst || 0);
+                });
+            }
 
-                p += parseFloat(r.profit || r.amt || 0); 
-                n += parseFloat(r.fPartyPending || r.pPend || 0);
-                bAdv += parseFloat(r.adv || r.bAdv || 0);
-                bPend += parseFloat(r.bPend || 0);
-                comm += parseFloat(r.commission || 0);
-                gst += parseFloat(r.gst || 0); // GST amount add kiya
-            });
-        }
-
-        let cardContent = '';
-
-        if (c.id === 'EXP') {
-            // Expense Card mein sirf total spent dikhega
-            cardContent = `<div class="stat-row"><span>Total Spent:</span> <b style="color:var(--danger)">${formatINR(p)}</b></div>`;
-        } 
-        else if (c.id === 'C6') {
-            // Suraj Yadev: Without GST = Profit - GST
-            cardContent = `
-                <div class="stat-row"><span>Profit (With GST):</span> <b style="color:var(--success)">${formatINR(p)}</b></div>
-                <div class="stat-row"><span>Without GST Profit:</span> <b style="color:var(--info)">${formatINR(p - gst)}</b></div>
-                <div class="stat-row"><span>Party Pend:</span> <b style="color:var(--danger)">${formatINR(n)}</b></div>
-                <div class="stat-row" style="border-top: 1px dashed #ccc; margin-top: 5px; padding-top: 5px;">
-                    <span>Brok Adv:</span> <b>${formatINR(bAdv)}</b>
-                </div>
-                <div class="stat-row"><span>Brok Pend:</span> <b style="color:#e67e22">${formatINR(bPend)}</b></div>
-            `;
-        } 
-        else {
-            // Standard Companies: Without GST = Profit - GST - Commission
-            cardContent = `
-                <div class="stat-row"><span>Profit (With GST):</span> <b style="color:var(--success)">${formatINR(p)}</b></div>
-                <div class="stat-row"><span>Without GST Profit:</span> <b style="color:var(--info)">${formatINR(p - gst - comm)}</b></div>
-                <div class="stat-row"><span>Party Pend:</span> <b style="color:var(--danger)">${formatINR(n)}</b></div>
-                <div class="stat-row" style="border-top: 1px dashed #ccc; margin-top: 5px; padding-top: 5px;">
-                    <span>Brok Adv:</span> <b>${formatINR(bAdv)}</b>
-                </div>
-                <div class="stat-row"><span>Brok Pend:</span> <b style="color:#e67e22">${formatINR(bPend)}</b></div>
-                <div class="stat-row"><span>Commission:</span> <b style="color:var(--suraj)">${formatINR(comm)}</b></div>
-            `;
-        }
-
-        grid.innerHTML += `
-        <div class="company-card" onclick="openLedger('${c.id}', '${c.name}')" style="${c.id === 'EXP' ? 'border-left-color:var(--expense)' : ''}">
-            <h3>${c.name}</h3>
-            <div class="comp-stats">
-                ${cardContent}
-            </div>
-        </div>`;
-    });
-    updateStats();
-}
             let cardContent = '';
-
             if (c.id === 'EXP') {
                 cardContent = `<div class="stat-row"><span>Total Spent:</span> <b style="color:var(--danger)">${formatINR(p)}</b></div>`;
-            } 
-            else if (c.id === 'C6') {
+            } else if (c.id === 'C6') {
                 cardContent = `
                     <div class="stat-row"><span>Profit (With GST):</span> <b style="color:var(--success)">${formatINR(p)}</b></div>
+                    <div class="stat-row"><span>Without GST:</span> <b style="color:var(--info)">${formatINR(p - gst)}</b></div>
                     <div class="stat-row"><span>Party Pend:</span> <b style="color:var(--danger)">${formatINR(n)}</b></div>
-                    <div class="stat-row" style="border-top: 1px dashed #ccc; margin-top: 5px; padding-top: 5px;">
-                        <span>Brok Adv:</span> <b>${formatINR(bAdv)}</b>
-                    </div>
-                    <div class="stat-row"><span>Brok Pend:</span> <b style="color:#e67e22">${formatINR(bPend)}</b></div>
-                `;
-            } 
-            else {
+                    <div class="stat-row"><span>Brok Pend:</span> <b style="color:#e67e22">${formatINR(bPend)}</b></div>`;
+            } else {
                 cardContent = `
                     <div class="stat-row"><span>Profit (With GST):</span> <b style="color:var(--success)">${formatINR(p)}</b></div>
+                    <div class="stat-row"><span>Without GST:</span> <b style="color:var(--info)">${formatINR(p - gst - comm)}</b></div>
                     <div class="stat-row"><span>Party Pend:</span> <b style="color:var(--danger)">${formatINR(n)}</b></div>
-                    <div class="stat-row" style="border-top: 1px dashed #ccc; margin-top: 5px; padding-top: 5px;">
-                        <span>Brok Adv:</span> <b>${formatINR(bAdv)}</b>
-                    </div>
                     <div class="stat-row"><span>Brok Pend:</span> <b style="color:#e67e22">${formatINR(bPend)}</b></div>
-                    <div class="stat-row"><span>Commission:</span> <b style="color:var(--suraj)">${formatINR(comm)}</b></div>
-                `;
+                    <div class="stat-row"><span>Commission:</span> <b style="color:var(--suraj)">${formatINR(comm)}</b></div>`;
             }
 
             grid.innerHTML += `
             <div class="company-card" onclick="openLedger('${c.id}', '${c.name}')" style="${c.id === 'EXP' ? 'border-left-color:var(--expense)' : ''}">
-                <h3>${c.name}</h3>
-                <div class="comp-stats">
-                    ${cardContent}
-                </div>
+                <h3>${c.name}</h3><div class="comp-stats">${cardContent}</div>
             </div>`;
-;
+        });
         updateStats();
-
+    }
 
     function updateStats() {
         let tp = 0, tn = 0, tgst = 0, texp = 0, tcomm = 0;
         const selectedMonth = document.getElementById('dashMonthFilter').value;
-
         companies.forEach(c => {
             if(db[c.id]) {
                 db[c.id].forEach(r => { 
-                    // Month filter for top stats
                     let recordMonth = r.date ? r.date.split("-")[1] : "";
                     if (selectedMonth !== "" && recordMonth !== selectedMonth) return;
-
-                    if(c.id === 'EXP') {
-                        texp += parseFloat(r.amt || 0);
-                    } else {
+                    if(c.id === 'EXP') texp += parseFloat(r.amt || 0);
+                    else {
                         tp += parseFloat(r.profit || 0); 
                         tn += parseFloat(r.fPartyPending || r.pPend || 0); 
                         tgst += parseFloat(r.gst || 0);
@@ -344,7 +314,6 @@
             }
         });
         document.getElementById('gTotal').innerText = formatINR(tp);
-        // NEW FORMULA: Profit - GST - Expenses - Commission
         document.getElementById('gTotalNoGst').innerText = formatINR(tp - tgst - texp - tcomm);
         document.getElementById('gExpTotal').innerText = formatINR(texp);
         document.getElementById('gPend').innerText = formatINR(tn);
@@ -380,33 +349,22 @@
         document.getElementById('surajForm').style.display = (id === 'C6') ? 'grid' : 'none';
         document.getElementById('expenseForm').style.display = (id === 'EXP') ? 'grid' : 'none';
         document.getElementById('standardForm').style.display = (id !== 'C6' && id !== 'EXP') ? 'grid' : 'none';
-        clearForm();
-        renderTable();
+        clearForm(); renderTable();
     }
 
     function saveEntry() {
         const idx = parseInt(document.getElementById('editIndex').value);
         const row = {
-            date: document.getElementById('fDate').value, 
-            bilty: document.getElementById('fBilty').value,
-            bill: document.getElementById('fBill').value, 
-            from: document.getElementById('fFrom').value,
-            to: document.getElementById('fTo').value, 
-            charge: document.getElementById('fPartyCharge').value,
-            gst: document.getElementById('fGST').value, 
-            totalBill: document.getElementById('fTotalBill').value,
-            fPartyPending: document.getElementById('fPartyPending').value, 
-            hire: document.getElementById('fTruckHire').value,
-            loading: document.getElementById('fLoading').value, 
-            truckTotal: document.getElementById('fTruckTotal').value,
-            brokerName: document.getElementById('fBrokerName').value,
-            adv: document.getElementById('fAdv').value, 
-            bPend: document.getElementById('fPending').value,
-            clearDate: document.getElementById('fClearDate').value, 
-            weight: document.getElementById('fWeight').value,
-            box: document.getElementById('fBox').value, 
-            veh: document.getElementById('fVehicle').value, 
-            profit: document.getElementById('fProfit').value,
+            date: document.getElementById('fDate').value, bilty: document.getElementById('fBilty').value,
+            bill: document.getElementById('fBill').value, from: document.getElementById('fFrom').value,
+            to: document.getElementById('fTo').value, charge: document.getElementById('fPartyCharge').value,
+            gst: document.getElementById('fGST').value, totalBill: document.getElementById('fTotalBill').value,
+            fPartyPending: document.getElementById('fPartyPending').value, hire: document.getElementById('fTruckHire').value,
+            loading: document.getElementById('fLoading').value, truckTotal: document.getElementById('fTruckTotal').value,
+            brokerName: document.getElementById('fBrokerName').value, adv: document.getElementById('fAdv').value, 
+            bPend: document.getElementById('fPending').value, clearDate: document.getElementById('fClearDate').value, 
+            weight: document.getElementById('fWeight').value, box: document.getElementById('fBox').value, 
+            veh: document.getElementById('fVehicle').value, profit: document.getElementById('fProfit').value,
             commission: document.getElementById('fCommission').value || 0
         };
         if(idx === -1) db[activeID].push(row); else db[activeID][idx] = row;
@@ -447,10 +405,7 @@
     function finishSave() {
         localStorage.setItem(currentUserKey, JSON.stringify(db));
         alert("✅ Saved!");
-        clearForm();
-        renderTable();
-        updateStats();
-        init(); // Re-render cards to show updated numbers
+        clearForm(); renderTable(); updateStats(); init();
     }
 
     function renderTable() {
@@ -472,14 +427,14 @@
                 body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.name}</td><td>${r.reason}</td><td>${r.amt}</td><td><button class="btn-edit" onclick="editExp(${idx})">✏️</button><button class="btn-del" onclick="delR(${idx})">🗑️</button></td></tr>`;
             });
         } else if(activeID === 'C6') {
-            head.innerHTML = `<tr><th>Date</th><th>Bilty No</th><th>From</th><th>To</th><th>Party Name</th><th>Charge</th><th>GST</th><th>Total Bill</th><th>P.Pend</th><th>Hire</th><th>Toll</th><th>Diesel</th><th>KM</th><th>B.Adv</th><th>B.Pend</th><th>Weight</th><th>Box</th><th>Vehicle</th><th>Profit</th><th>Actions</th></tr>`;
+            head.innerHTML = `<tr><th>Date</th><th>Bilty</th><th>From</th><th>To</th><th>Party</th><th>Charge</th><th>Total Bill</th><th>P.Pend</th><th>Hire</th><th>B.Pend</th><th>Vehicle</th><th>Profit</th><th>Actions</th></tr>`;
             filtered.forEach((r, idx) => {
-                body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.from}</td><td>${r.to}</td><td>${r.pName}</td><td>${r.charge}</td><td>${r.gst}</td><td>${r.totalBill}</td><td class="badge-pending">${r.pPend}</td><td>${r.hire}</td><td>${r.toll}</td><td>${r.diesel}</td><td>${r.km}</td><td>${r.bAdv}</td><td class="badge-pending">${r.bPend}</td><td>${r.weight}</td><td>${r.box}</td><td>${r.veh}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editSuraj(${idx})">✏️</button><button class="btn-del" onclick="delR(${idx})">🗑️</button></td></tr>`;
+                body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.from}</td><td>${r.to}</td><td>${r.pName}</td><td>${r.charge}</td><td>${r.totalBill}</td><td class="badge-pending">${r.pPend}</td><td>${r.hire}</td><td class="badge-pending">${r.bPend}</td><td>${r.veh}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editSuraj(${idx})">✏️</button><button class="btn-del" onclick="delR(${idx})">🗑️</button></td></tr>`;
             });
         } else {
-            head.innerHTML = `<tr><th>Date</th><th>Bilty No</th><th>Bill No</th><th>From</th><th>To</th><th>Charge</th><th>GST</th><th>Total</th><th>P.Pend</th><th>Hire</th><th>Truck Total</th><th>Broker</th><th>Adv</th><th>Brok Pend</th><th>Clear Date</th><th>Weight</th><th>Box</th><th>Vehicle</th><th>Commission</th><th>Profit</th><th>Actions</th></tr>`;
+            head.innerHTML = `<tr><th>Date</th><th>Bilty</th><th>Bill No</th><th>From</th><th>To</th><th>Charge</th><th>Total</th><th>P.Pend</th><th>Hire</th><th>Brok Pend</th><th>Comm</th><th>Profit</th><th>Actions</th></tr>`;
             filtered.forEach((r, idx) => {
-                body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.bill}</td><td>${r.from}</td><td>${r.to}</td><td>${r.charge}</td><td>${r.gst}</td><td>${r.totalBill}</td><td class="badge-pending">${r.fPartyPending}</td><td>${r.hire}</td><td>${r.truckTotal}</td><td>${r.brokerName || '-'}</td><td>${r.adv}</td><td class="badge-pending">${r.bPend}</td><td>${formatDate(r.clearDate)}</td><td>${r.weight}</td><td>${r.box}</td><td>${r.veh}</td><td style="color:var(--danger); font-weight:bold;">${r.commission || 0}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editStd(${idx})">✏️</button><button class="btn-del" onclick="delR(${idx})">🗑️</button></td></tr>`;
+                body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.bill}</td><td>${r.from}</td><td>${r.to}</td><td>${r.charge}</td><td>${r.totalBill}</td><td class="badge-pending">${r.fPartyPending}</td><td>${r.hire}</td><td class="badge-pending">${r.bPend}</td><td style="color:var(--danger)">${r.commission}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editStd(${idx})">✏️</button><button class="btn-del" onclick="delR(${idx})">🗑️</button></td></tr>`;
             });
         }
     }
@@ -568,7 +523,6 @@
         XLSX.utils.book_append_sheet(wb, ws, "Ledger");
         XLSX.writeFile(wb, `${activeID}_Ledger.xlsx`);
     }
-
 </script>
 </body>
 </html>
