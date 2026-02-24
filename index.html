@@ -39,7 +39,7 @@
         .search-container { display: flex; gap: 10px; margin-bottom: 15px; }
         .search-container input, .search-container select { padding: 15px; border-radius: 12px; border: 2px solid #ddd; font-size: 1rem; outline: none; }
         .table-wrap { overflow-x: auto; background: white; border-radius: 20px; max-height: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
         th { background: var(--primary); color: white; padding: 18px 12px; font-size: 11px; text-align: left; position: sticky; top: 0; z-index: 10; }
         td { padding: 15px 12px; border-bottom: 1px solid #f0f0f0; font-size: 12px; white-space: nowrap; }
         .badge-profit { background: #e8f5e9; color: #2e7d32; font-weight: bold; }
@@ -115,8 +115,8 @@
         <div class="input-group"><label>Box</label><input type="number" id="fBox"></div>
         <div class="input-group"><label>Vehicle</label><input type="text" id="fVehicle"></div>
         <div class="input-group"><label style="color:var(--danger)">Commission</label><input type="number" id="fCommission" oninput="stdCalc()" placeholder="0"></div>
-        <div class="input-group"><label>Slip No</label><input type="text" id="fSlipNo" placeholder="Slip Number"></div>
-        <div class="input-group" style="display:none;"><label>Profit</label><input type="number" id="fProfit" class="auto-field" readonly></div>
+        <div class="input-group"><label>Slip No</label><input type="text" id="fSlipNo"></div>
+        <input type="hidden" id="fProfit">
         <div class="btn-action">
             <button id="saveBtn" onclick="saveEntry()" style="background:var(--success);">SAVE RECORD</button>
             <button id="cancelBtn" onclick="clearForm()" style="background:#888; display:none;">CANCEL</button>
@@ -135,15 +135,15 @@
         <div class="input-group"><label>Total Bill</label><input type="number" id="sTotalBill" class="auto-field" readonly></div>
         <div class="input-group"><label>Party Pending</label><input type="number" id="sPPend"></div>
         <div class="input-group"><label>Truck Hire</label><input type="number" id="sHire" oninput="surajCalc()"></div>
-        <div class="input-group"><label>Toll</label><input type="number" id="sToll" oninput="surajCalc()"></div>
-        <div class="input-group"><label>Diesel</label><input type="number" id="sDiesel" oninput="surajCalc()"></div>
+        <div class="input-group"><label>Toll</label><input type="number" id="sToll"></div>
+        <div class="input-group"><label>Diesel</label><input type="number" id="sDiesel"></div>
         <div class="input-group"><label>KM</label><input type="number" id="sKM"></div>
         <div class="input-group"><label>Broker Adv</label><input type="number" id="sBAdv" oninput="surajCalc()"></div>
         <div class="input-group"><label>Broker Pend</label><input type="number" id="sBPend" class="auto-field" readonly></div>
         <div class="input-group"><label>Weight</label><input type="text" id="sWeight"></div>
         <div class="input-group"><label>Box</label><input type="number" id="sBox"></div>
         <div class="input-group"><label>Vehicle</label><input type="text" id="sVehicle"></div>
-        <div class="input-group" style="display:none;"><label>Profit</label><input type="number" id="sProfit" class="auto-field" readonly></div>
+        <input type="hidden" id="sProfit">
         <div class="btn-action">
             <button id="sSaveBtn" onclick="saveSuraj()" style="background:var(--suraj);">SAVE SURAJ RECORD</button>
             <button id="sCancelBtn" onclick="clearForm()" style="background:#888; display:none;">CANCEL</button>
@@ -223,7 +223,7 @@
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
         const dlAnchor = document.createElement('a');
         dlAnchor.setAttribute("href", dataStr);
-        dlAnchor.setAttribute("download", "cargonix_full_data.json");
+        dlAnchor.setAttribute("download", "cargonix_backup.json");
         dlAnchor.click();
     }
 
@@ -235,7 +235,7 @@
             try {
                 db = JSON.parse(e.target.result);
                 localStorage.setItem(currentUserKey, JSON.stringify(db));
-                alert("✅ Data Successfully Restored!");
+                alert("Data Restored!");
                 init();
             } catch(err) { alert("Invalid File!"); }
         };
@@ -261,23 +261,12 @@
                 });
             }
             
-            let cardContent = '';
-            if (c.id === 'EXP') {
-                cardContent = `<div class="stat-row"><span>Total Spent:</span> <b style="color:var(--danger)">${formatINR(p)}</b></div>`;
-            } else if (c.id === 'C6') {
-                cardContent = `
-                    <div class="stat-row"><span>Profit (With GST):</span> <b style="color:var(--success)">${formatINR(p)}</b></div>
-                    <div class="stat-row"><span>Without GST:</span> <b style="color:var(--info)">${formatINR(p - gst)}</b></div>
-                    <div class="stat-row"><span>Party Pend:</span> <b style="color:var(--danger)">${formatINR(n)}</b></div>
-                    <div class="stat-row"><span>Brok Pend:</span> <b style="color:#e67e22">${formatINR(bPend)}</b></div>`;
-            } else {
-                cardContent = `
-                    <div class="stat-row"><span>Profit (With GST):</span> <b style="color:var(--success)">${formatINR(p)}</b></div>
-                    <div class="stat-row"><span>Without GST:</span> <b style="color:var(--info)">${formatINR(p - gst - comm)}</b></div>
-                    <div class="stat-row"><span>Party Pend:</span> <b style="color:var(--danger)">${formatINR(n)}</b></div>
-                    <div class="stat-row"><span>Brok Pend:</span> <b style="color:#e67e22">${formatINR(bPend)}</b></div>
-                    <div class="stat-row"><span>Commission:</span> <b style="color:var(--suraj)">${formatINR(comm)}</b></div>`;
-            }
+            let cardContent = (c.id === 'EXP') ? 
+                `<div class="stat-row"><span>Total Spent:</span> <b style="color:var(--danger)">${formatINR(p)}</b></div>` :
+                `<div class="stat-row"><span>Profit (With GST):</span> <b style="color:var(--success)">${formatINR(p)}</b></div>
+                 <div class="stat-row"><span>Without GST:</span> <b style="color:var(--info)">${formatINR(p - gst - comm)}</b></div>
+                 <div class="stat-row"><span>Party Pend:</span> <b style="color:var(--danger)">${formatINR(n)}</b></div>
+                 <div class="stat-row"><span>Brok Pend:</span> <b style="color:#e67e22">${formatINR(bPend)}</b></div>`;
 
             grid.innerHTML += `
             <div class="company-card" onclick="openLedger('${c.id}', '${c.name}')" style="${c.id === 'EXP' ? 'border-left-color:var(--expense)' : ''}">
@@ -290,20 +279,18 @@
     function updateStats() {
         let tp = 0, tn = 0, tgst = 0, texp = 0, tcomm = 0;
         const selectedMonth = document.getElementById('dashMonthFilter').value;
-        companies.forEach(c => {
-            if(db[c.id]) {
-                db[c.id].forEach(r => { 
-                    let recordMonth = r.date ? r.date.split("-")[1] : "";
-                    if (selectedMonth !== "" && recordMonth !== selectedMonth) return;
-                    if(c.id === 'EXP') texp += parseFloat(r.amt || 0);
-                    else {
-                        tp += parseFloat(r.profit || 0); 
-                        tn += parseFloat(r.fPartyPending || r.pPend || 0); 
-                        tgst += parseFloat(r.gst || 0);
-                        tcomm += parseFloat(r.commission || 0);
-                    }
-                });
-            }
+        Object.keys(db).forEach(id => {
+            db[id].forEach(r => {
+                let recordMonth = r.date ? r.date.split("-")[1] : "";
+                if (selectedMonth !== "" && recordMonth !== selectedMonth) return;
+                if(id === 'EXP') texp += parseFloat(r.amt || 0);
+                else {
+                    tp += parseFloat(r.profit || 0);
+                    tn += parseFloat(r.fPartyPending || r.pPend || 0);
+                    tgst += parseFloat(r.gst || 0);
+                    tcomm += parseFloat(r.commission || 0);
+                }
+            });
         });
         document.getElementById('gTotal').innerText = formatINR(tp);
         document.getElementById('gTotalNoGst').innerText = formatINR(tp - tgst - tcomm);
@@ -317,30 +304,26 @@
         let loading = parseFloat(document.getElementById('fLoading').value) || 0;
         let adv = parseFloat(document.getElementById('fAdv').value) || 0;
         let comm = parseFloat(document.getElementById('fCommission').value) || 0;
-
         let gst = Math.round(charge * 0.18);
-        let totalBill = Math.round(charge + gst);
+        let totalBill = charge + gst;
         let truckTotal = hire + loading;
-
         document.getElementById('fGST').value = gst;
         document.getElementById('fTotalBill').value = totalBill;
         document.getElementById('fTruckTotal').value = truckTotal;
-        document.getElementById('fPending').value = (truckTotal - adv).toFixed(0);
-        document.getElementById('fProfit').value = (totalBill - truckTotal - comm).toFixed(0);
+        document.getElementById('fPending').value = truckTotal - adv;
+        document.getElementById('fProfit').value = totalBill - truckTotal - comm;
     }
 
     function surajCalc() {
         let charge = parseFloat(document.getElementById('sCharge').value) || 0;
         let hire = parseFloat(document.getElementById('sHire').value) || 0;
         let bAdv = parseFloat(document.getElementById('sBAdv').value) || 0;
-        
         let gst = Math.round(charge * 0.18);
-        let totalBill = Math.round(charge + gst);
-
+        let totalBill = charge + gst;
         document.getElementById('sGST').value = gst;
         document.getElementById('sTotalBill').value = totalBill;
-        document.getElementById('sBPend').value = (hire - bAdv).toFixed(0);
-        document.getElementById('sProfit').value = (totalBill - hire).toFixed(0);
+        document.getElementById('sBPend').value = hire - bAdv;
+        document.getElementById('sProfit').value = totalBill - hire;
     }
 
     function openLedger(id, name) {
@@ -361,17 +344,22 @@
             bill: document.getElementById('fBill').value, from: document.getElementById('fFrom').value,
             to: document.getElementById('fTo').value, charge: document.getElementById('fPartyCharge').value,
             gst: document.getElementById('fGST').value, totalBill: document.getElementById('fTotalBill').value,
-            fPartyPending: document.getElementById('fPartyPending').value, hire: document.getElementById('fTruckHire').value,
-            loading: document.getElementById('fLoading').value, truckTotal: document.getElementById('fTruckTotal').value,
-            brokerName: document.getElementById('fBrokerName').value, adv: document.getElementById('fAdv').value, 
-            bPend: document.getElementById('fPending').value, clearDate: document.getElementById('fClearDate').value, 
-            weight: document.getElementById('fWeight').value, box: document.getElementById('fBox').value, 
-            veh: document.getElementById('fVehicle').value, profit: document.getElementById('fProfit').value,
-            commission: document.getElementById('fCommission').value || 0,
+            fPartyPending: document.getElementById('fPartyPending').value, 
+            hire: document.getElementById('fTruckHire').value,
+            loading: document.getElementById('fLoading').value, 
+            truckTotal: document.getElementById('fTruckTotal').value,
+            brokerName: document.getElementById('fBrokerName').value, 
+            adv: document.getElementById('fAdv').value, 
+            bPend: document.getElementById('fPending').value, 
+            clearDate: document.getElementById('fClearDate').value, 
+            weight: document.getElementById('fWeight').value, 
+            box: document.getElementById('fBox').value, 
+            veh: document.getElementById('fVehicle').value, 
+            profit: document.getElementById('fProfit').value,
+            commission: document.getElementById('fCommission').value || 0, 
             slipNo: document.getElementById('fSlipNo').value || '-'
         };
         if(idx === -1) db[activeID].push(row); else db[activeID][idx] = row;
-        db[activeID].sort((a,b) => new Date(a.date) - new Date(b.date));
         finishSave();
     }
 
@@ -390,7 +378,6 @@
             profit: document.getElementById('sProfit').value
         };
         if(idx === -1) db.C6.push(row); else db.C6[idx] = row;
-        db.C6.sort((a,b) => new Date(a.date) - new Date(b.date));
         finishSave();
     }
 
@@ -401,14 +388,13 @@
             reason: document.getElementById('eReason').value, amt: document.getElementById('eAmt').value
         };
         if(idx === -1) db.EXP.push(row); else db.EXP[idx] = row;
-        db.EXP.sort((a,b) => new Date(a.date) - new Date(b.date));
         finishSave();
     }
 
     function finishSave() {
         localStorage.setItem(currentUserKey, JSON.stringify(db));
-        alert("✅ Saved!");
-        clearForm(); renderTable(); updateStats(); init();
+        alert("✅ Data Saved!");
+        clearForm(); renderTable(); init();
     }
 
     function renderTable() {
@@ -417,9 +403,8 @@
         const search = document.getElementById('searchInput').value.toUpperCase();
         const month = document.getElementById('monthFilter').value;
         body.innerHTML = '';
-        
         let data = db[activeID] || [];
-        // Map data to include original index for stable editing
+        
         let filtered = data.map((r, i) => ({...r, originalIdx: i})).filter(r => {
             let matchesSearch = Object.values(r).some(val => String(val).toUpperCase().includes(search));
             let matchesMonth = month === "" || (r.date && r.date.split("-")[1] === month);
@@ -437,9 +422,35 @@
                 body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.from}</td><td>${r.to}</td><td>${r.pName}</td><td>${r.charge}</td><td>${r.totalBill}</td><td class="badge-pending">${r.pPend}</td><td>${r.hire}</td><td class="badge-pending">${r.bPend}</td><td>${r.veh}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editSuraj(${r.originalIdx})">✏️</button><button class="btn-del" onclick="delR(${r.originalIdx})">🗑️</button></td></tr>`;
             });
         } else {
-            head.innerHTML = `<tr><th>Date</th><th>Bilty</th><th>Bill No</th><th>From</th><th>To</th><th>Charge</th><th>Total</th><th>P.Pend</th><th>Hire</th><th>Brok Pend</th><th>Comm</th><th>Slip No</th><th>Profit</th><th>Actions</th></tr>`;
+            // STANDARD TABLE WITH TRUCK AND BROKER DETAILS
+            head.innerHTML = `<tr>
+                <th>Date</th><th>Bilty</th><th>Bill No</th><th>From</th><th>To</th>
+                <th>Truck Hire</th><th>Loading</th><th>T. Total</th><th>Broker</th>
+                <th>Adv</th><th>B. Pend</th><th>Clear Date</th>
+                <th>P. Pend</th><th>Profit</th><th>Actions</th>
+            </tr>`;
+            
             filtered.forEach((r) => {
-                body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.bill}</td><td>${r.from}</td><td>${r.to}</td><td>${r.charge}</td><td>${r.totalBill}</td><td class="badge-pending">${r.fPartyPending}</td><td>${r.hire}</td><td class="badge-pending">${r.bPend}</td><td style="color:var(--danger)">${r.commission}</td><td>${r.slipNo || '-'}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editStd(${r.originalIdx})">✏️</button><button class="btn-del" onclick="delR(${r.originalIdx})">🗑️</button></td></tr>`;
+                body.innerHTML += `<tr>
+                    <td>${formatDate(r.date)}</td>
+                    <td>${r.bilty}</td>
+                    <td>${r.bill}</td>
+                    <td>${r.from}</td>
+                    <td>${r.to}</td>
+                    <td>${r.hire || 0}</td>
+                    <td>${r.loading || 0}</td>
+                    <td><b>${r.truckTotal || 0}</b></td>
+                    <td>${r.brokerName || '-'}</td>
+                    <td>${r.adv || 0}</td>
+                    <td class="badge-pending">${r.bPend || 0}</td>
+                    <td>${formatDate(r.clearDate)}</td>
+                    <td class="badge-pending">${r.fPartyPending || 0}</td>
+                    <td class="badge-profit">${r.profit || 0}</td>
+                    <td>
+                        <button class="btn-edit" onclick="editStd(${r.originalIdx})">✏️</button>
+                        <button class="btn-del" onclick="delR(${r.originalIdx})">🗑️</button>
+                    </td>
+                </tr>`;
             });
         }
     }
@@ -473,8 +484,8 @@
         document.getElementById('fWeight').value = r.weight;
         document.getElementById('fBox').value = r.box;
         document.getElementById('fVehicle').value = r.veh;
-        document.getElementById('fCommission').value = r.commission || 0;
-        document.getElementById('fSlipNo').value = r.slipNo || '';
+        document.getElementById('fCommission').value = r.commission;
+        document.getElementById('fSlipNo').value = r.slipNo;
         stdCalc();
         document.getElementById('saveBtn').innerText = "UPDATE RECORD";
         document.getElementById('cancelBtn').style.display = "block";
@@ -499,11 +510,11 @@
         document.getElementById('sBox').value = r.box;
         document.getElementById('sVehicle').value = r.veh;
         surajCalc();
-        document.getElementById('sSaveBtn').innerText = "UPDATE SURAJ";
+        document.getElementById('sSaveBtn').innerText = "UPDATE SURAJ RECORD";
         document.getElementById('sCancelBtn').style.display = "block";
     }
 
-    function delR(idx) { if(confirm("Delete?")) { db[activeID].splice(idx, 1); finishSave(); } }
+    function delR(idx) { if(confirm("Are you sure?")) { db[activeID].splice(idx, 1); finishSave(); } }
 
     function clearForm() {
         document.querySelectorAll('input').forEach(i => { if(i.type !== 'hidden') i.value = '' });
@@ -523,10 +534,9 @@
     }
 
     function exportExcel() {
-        const data = db[activeID];
-        const ws = XLSX.utils.json_to_sheet(data);
+        const ws = XLSX.utils.json_to_sheet(db[activeID]);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Ledger");
+        XLSX.utils.book_append_sheet(wb, ws, "Ledger_Data");
         XLSX.writeFile(wb, `${activeID}_Ledger.xlsx`);
     }
 </script>
