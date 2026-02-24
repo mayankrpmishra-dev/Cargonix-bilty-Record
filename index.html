@@ -15,12 +15,9 @@
         .login-box button { width: 100%; padding: 15px; background: var(--accent); border: none; border-radius: 10px; color: white; font-weight: 700; cursor: pointer; }
         .header-main { background: var(--primary); color: white; text-align: center; padding: 40px 20px 70px; border-bottom: 5px solid var(--accent); }
         .header-main h1 { margin: 0; font-size: 2.2rem; font-weight: 800; letter-spacing: 1px; }
-        
-        /* Backup Bar Styling */
         .backup-section { background: #fff; padding: 15px; text-align: center; border-bottom: 1px solid #ddd; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
         .btn-backup { background: #2c3e50; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; }
         .btn-restore { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; }
-
         .stats-container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: -50px auto 30px; max-width: 1200px; padding: 0 20px; }
         .stat-box { background: white; flex: 1; min-width: 200px; padding: 20px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.15); text-align: center; border-top: 6px solid var(--accent); }
         .stat-val { font-size: 1.4rem; font-weight: 800; color: var(--primary); }
@@ -66,13 +63,11 @@
 
 <div id="landing-page" style="display:none">
     <div class="header-main"><h1>CARGONIX MOVERS PVT. LTD.</h1></div>
-    
     <div class="backup-section">
-        <button class="btn-backup" onclick="exportBackup()">📥 GET BACKUP FILE (Purane Laptop mein click karein)</button>
-        <button class="btn-restore" onclick="document.getElementById('importFile').click()">📤 RESTORE FROM FILE (Naye Laptop mein click karein)</button>
+        <button class="btn-backup" onclick="exportBackup()">📥 GET BACKUP FILE</button>
+        <button class="btn-restore" onclick="document.getElementById('importFile').click()">📤 RESTORE FROM FILE</button>
         <input type="file" id="importFile" style="display:none" onchange="importBackup(event)">
     </div>
-
     <div class="dash-filter-wrap">
         <select id="dashMonthFilter" onchange="init()">
             <option value="">📊 Lifetime Report (All Months)</option>
@@ -82,7 +77,6 @@
             <option value="10">October</option><option value="11">November</option><option value="12">December</option>
         </select>
     </div>
-
     <div class="stats-container">
         <div class="stat-box"><h4>Total Profit (With GST)</h4><div class="stat-val" id="gTotal">₹ 0</div></div>
         <div class="stat-box" style="border-top-color: var(--success);"><h4>Without GST Profit</h4><div class="stat-val" id="gTotalNoGst" style="color:var(--success)">₹ 0</div></div>
@@ -120,7 +114,8 @@
         <div class="input-group"><label>Weight</label><input type="text" id="fWeight"></div>
         <div class="input-group"><label>Box</label><input type="number" id="fBox"></div>
         <div class="input-group"><label>Vehicle</label><input type="text" id="fVehicle"></div>
-        <div class="input-group"><label style="color:var(--danger)">Commission</label><input type="number" id="fCommission" placeholder="0"></div>
+        <div class="input-group"><label style="color:var(--danger)">Commission</label><input type="number" id="fCommission" oninput="stdCalc()" placeholder="0"></div>
+        <div class="input-group"><label>Slip No</label><input type="text" id="fSlipNo" placeholder="Slip Number"></div>
         <div class="input-group" style="display:none;"><label>Profit</label><input type="number" id="fProfit" class="auto-field" readonly></div>
         <div class="btn-action">
             <button id="saveBtn" onclick="saveEntry()" style="background:var(--success);">SAVE RECORD</button>
@@ -224,14 +219,12 @@
         init();
     }
 
-    // BACKUP & RESTORE LOGIC
     function exportBackup() {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
         const dlAnchor = document.createElement('a');
         dlAnchor.setAttribute("href", dataStr);
         dlAnchor.setAttribute("download", "cargonix_full_data.json");
         dlAnchor.click();
-        alert("Backup file download ho gayi hai!");
     }
 
     function importBackup(event) {
@@ -255,20 +248,19 @@
         grid.innerHTML = '';
 
         companies.forEach(c => {
-            let p = 0, n = 0, bAdv = 0, bPend = 0, comm = 0, gst = 0;
+            let p = 0, n = 0, bPend = 0, comm = 0, gst = 0;
             if(db[c.id]) {
                 db[c.id].forEach(r => { 
                     let recordMonth = r.date ? r.date.split("-")[1] : "";
                     if (selectedMonth !== "" && recordMonth !== selectedMonth) return;
                     p += parseFloat(r.profit || r.amt || 0); 
                     n += parseFloat(r.fPartyPending || r.pPend || 0);
-                    bAdv += parseFloat(r.adv || r.bAdv || 0);
                     bPend += parseFloat(r.bPend || 0);
                     comm += parseFloat(r.commission || 0);
                     gst += parseFloat(r.gst || 0);
                 });
             }
-
+            
             let cardContent = '';
             if (c.id === 'EXP') {
                 cardContent = `<div class="stat-row"><span>Total Spent:</span> <b style="color:var(--danger)">${formatINR(p)}</b></div>`;
@@ -314,7 +306,7 @@
             }
         });
         document.getElementById('gTotal').innerText = formatINR(tp);
-        document.getElementById('gTotalNoGst').innerText = formatINR(tp - tgst - texp - tcomm);
+        document.getElementById('gTotalNoGst').innerText = formatINR(tp - tgst - tcomm);
         document.getElementById('gExpTotal').innerText = formatINR(texp);
         document.getElementById('gPend').innerText = formatINR(tn);
     }
@@ -324,21 +316,31 @@
         let hire = parseFloat(document.getElementById('fTruckHire').value) || 0;
         let loading = parseFloat(document.getElementById('fLoading').value) || 0;
         let adv = parseFloat(document.getElementById('fAdv').value) || 0;
-        document.getElementById('fGST').value = (charge * 0.18).toFixed(0);
-        document.getElementById('fTotalBill').value = (charge * 1.18).toFixed(0);
-        document.getElementById('fTruckTotal').value = (hire + loading).toFixed(0);
-        document.getElementById('fPending').value = (hire + loading - adv).toFixed(0);
-        document.getElementById('fProfit').value = ((charge * 1.18) - (hire + loading)).toFixed(0);
+        let comm = parseFloat(document.getElementById('fCommission').value) || 0;
+
+        let gst = Math.round(charge * 0.18);
+        let totalBill = Math.round(charge + gst);
+        let truckTotal = hire + loading;
+
+        document.getElementById('fGST').value = gst;
+        document.getElementById('fTotalBill').value = totalBill;
+        document.getElementById('fTruckTotal').value = truckTotal;
+        document.getElementById('fPending').value = (truckTotal - adv).toFixed(0);
+        document.getElementById('fProfit').value = (totalBill - truckTotal - comm).toFixed(0);
     }
 
     function surajCalc() {
         let charge = parseFloat(document.getElementById('sCharge').value) || 0;
         let hire = parseFloat(document.getElementById('sHire').value) || 0;
         let bAdv = parseFloat(document.getElementById('sBAdv').value) || 0;
-        document.getElementById('sGST').value = (charge * 0.18).toFixed(0);
-        document.getElementById('sTotalBill').value = (charge * 1.18).toFixed(0);
+        
+        let gst = Math.round(charge * 0.18);
+        let totalBill = Math.round(charge + gst);
+
+        document.getElementById('sGST').value = gst;
+        document.getElementById('sTotalBill').value = totalBill;
         document.getElementById('sBPend').value = (hire - bAdv).toFixed(0);
-        document.getElementById('sProfit').value = ((charge * 1.18) - hire).toFixed(0);
+        document.getElementById('sProfit').value = (totalBill - hire).toFixed(0);
     }
 
     function openLedger(id, name) {
@@ -365,7 +367,8 @@
             bPend: document.getElementById('fPending').value, clearDate: document.getElementById('fClearDate').value, 
             weight: document.getElementById('fWeight').value, box: document.getElementById('fBox').value, 
             veh: document.getElementById('fVehicle').value, profit: document.getElementById('fProfit').value,
-            commission: document.getElementById('fCommission').value || 0
+            commission: document.getElementById('fCommission').value || 0,
+            slipNo: document.getElementById('fSlipNo').value || '-'
         };
         if(idx === -1) db[activeID].push(row); else db[activeID][idx] = row;
         db[activeID].sort((a,b) => new Date(a.date) - new Date(b.date));
@@ -414,8 +417,10 @@
         const search = document.getElementById('searchInput').value.toUpperCase();
         const month = document.getElementById('monthFilter').value;
         body.innerHTML = '';
+        
         let data = db[activeID] || [];
-        let filtered = data.filter(r => {
+        // Map data to include original index for stable editing
+        let filtered = data.map((r, i) => ({...r, originalIdx: i})).filter(r => {
             let matchesSearch = Object.values(r).some(val => String(val).toUpperCase().includes(search));
             let matchesMonth = month === "" || (r.date && r.date.split("-")[1] === month);
             return matchesSearch && matchesMonth;
@@ -423,18 +428,18 @@
 
         if(activeID === 'EXP') {
             head.innerHTML = `<tr><th>Date</th><th>Name</th><th>Reason</th><th>Amount</th><th>Actions</th></tr>`;
-            filtered.forEach((r, idx) => {
-                body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.name}</td><td>${r.reason}</td><td>${r.amt}</td><td><button class="btn-edit" onclick="editExp(${idx})">✏️</button><button class="btn-del" onclick="delR(${idx})">🗑️</button></td></tr>`;
+            filtered.forEach((r) => {
+                body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.name}</td><td>${r.reason}</td><td>${r.amt}</td><td><button class="btn-edit" onclick="editExp(${r.originalIdx})">✏️</button><button class="btn-del" onclick="delR(${r.originalIdx})">🗑️</button></td></tr>`;
             });
         } else if(activeID === 'C6') {
             head.innerHTML = `<tr><th>Date</th><th>Bilty</th><th>From</th><th>To</th><th>Party</th><th>Charge</th><th>Total Bill</th><th>P.Pend</th><th>Hire</th><th>B.Pend</th><th>Vehicle</th><th>Profit</th><th>Actions</th></tr>`;
-            filtered.forEach((r, idx) => {
-                body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.from}</td><td>${r.to}</td><td>${r.pName}</td><td>${r.charge}</td><td>${r.totalBill}</td><td class="badge-pending">${r.pPend}</td><td>${r.hire}</td><td class="badge-pending">${r.bPend}</td><td>${r.veh}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editSuraj(${idx})">✏️</button><button class="btn-del" onclick="delR(${idx})">🗑️</button></td></tr>`;
+            filtered.forEach((r) => {
+                body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.from}</td><td>${r.to}</td><td>${r.pName}</td><td>${r.charge}</td><td>${r.totalBill}</td><td class="badge-pending">${r.pPend}</td><td>${r.hire}</td><td class="badge-pending">${r.bPend}</td><td>${r.veh}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editSuraj(${r.originalIdx})">✏️</button><button class="btn-del" onclick="delR(${r.originalIdx})">🗑️</button></td></tr>`;
             });
         } else {
-            head.innerHTML = `<tr><th>Date</th><th>Bilty</th><th>Bill No</th><th>From</th><th>To</th><th>Charge</th><th>Total</th><th>P.Pend</th><th>Hire</th><th>Brok Pend</th><th>Comm</th><th>Profit</th><th>Actions</th></tr>`;
-            filtered.forEach((r, idx) => {
-                body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.bill}</td><td>${r.from}</td><td>${r.to}</td><td>${r.charge}</td><td>${r.totalBill}</td><td class="badge-pending">${r.fPartyPending}</td><td>${r.hire}</td><td class="badge-pending">${r.bPend}</td><td style="color:var(--danger)">${r.commission}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editStd(${idx})">✏️</button><button class="btn-del" onclick="delR(${idx})">🗑️</button></td></tr>`;
+            head.innerHTML = `<tr><th>Date</th><th>Bilty</th><th>Bill No</th><th>From</th><th>To</th><th>Charge</th><th>Total</th><th>P.Pend</th><th>Hire</th><th>Brok Pend</th><th>Comm</th><th>Slip No</th><th>Profit</th><th>Actions</th></tr>`;
+            filtered.forEach((r) => {
+                body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.bill}</td><td>${r.from}</td><td>${r.to}</td><td>${r.charge}</td><td>${r.totalBill}</td><td class="badge-pending">${r.fPartyPending}</td><td>${r.hire}</td><td class="badge-pending">${r.bPend}</td><td style="color:var(--danger)">${r.commission}</td><td>${r.slipNo || '-'}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editStd(${r.originalIdx})">✏️</button><button class="btn-del" onclick="delR(${r.originalIdx})">🗑️</button></td></tr>`;
             });
         }
     }
@@ -469,6 +474,7 @@
         document.getElementById('fBox').value = r.box;
         document.getElementById('fVehicle').value = r.veh;
         document.getElementById('fCommission').value = r.commission || 0;
+        document.getElementById('fSlipNo').value = r.slipNo || '';
         stdCalc();
         document.getElementById('saveBtn').innerText = "UPDATE RECORD";
         document.getElementById('cancelBtn').style.display = "block";
