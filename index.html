@@ -392,8 +392,16 @@
     }
 
     function finishSave() {
+        // BILTY WISE SORTING LOGIC ADDED HERE
+        if (activeID !== 'EXP') {
+            db[activeID].sort((a, b) => {
+                const bA = parseInt(a.bilty) || 0;
+                const bB = parseInt(b.bilty) || 0;
+                return bA - bB;
+            });
+        }
         localStorage.setItem(currentUserKey, JSON.stringify(db));
-        alert("✅ Data Saved!");
+        alert("✅ Data Saved & Sorted by Bilty!");
         clearForm(); renderTable(); init();
     }
 
@@ -405,6 +413,7 @@
         body.innerHTML = '';
         let data = db[activeID] || [];
         
+        // Isme mapping sahi rakhi hai taaki sorting ke baad bhi sahi row edit ho
         let filtered = data.map((r, i) => ({...r, originalIdx: i})).filter(r => {
             let matchesSearch = Object.values(r).some(val => String(val).toUpperCase().includes(search));
             let matchesMonth = month === "" || (r.date && r.date.split("-")[1] === month);
@@ -422,7 +431,6 @@
                 body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.from}</td><td>${r.to}</td><td>${r.pName}</td><td>${r.charge}</td><td>${r.totalBill}</td><td class="badge-pending">${r.pPend}</td><td>${r.hire}</td><td class="badge-pending">${r.bPend}</td><td>${r.veh}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editSuraj(${r.originalIdx})">✏️</button><button class="btn-del" onclick="delR(${r.originalIdx})">🗑️</button></td></tr>`;
             });
         } else {
-            // STANDARD TABLE WITH TRUCK AND BROKER DETAILS
             head.innerHTML = `<tr>
                 <th>Date</th><th>Bilty</th><th>Bill No</th><th>From</th><th>To</th>
                 <th>Truck Hire</th><th>Loading</th><th>T. Total</th><th>Broker</th>
