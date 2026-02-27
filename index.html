@@ -79,8 +79,8 @@
     </div>
     <div class="stats-container">
         <div class="stat-box"><h4>Total Profit (With GST)</h4><div class="stat-val" id="gTotal">₹ 0</div></div>
-        <div class="stat-box" style="border-top-color: var(--success);"><h4>Without GST Profit</h4><div class="stat-val" id="gTotalNoGst" style="color:var(--success)">₹ 0</div></div>
-        <div class="stat-box" style="border-top-color: var(--expense);"><h4>Company Expenses</h4><div class="stat-val" id="gExpTotal" style="color:var(--expense)">₹ 0</div></div>
+        <div class="stat-box" style="border-top-color: var(--success);"><h4>Net Profit (After Exp)</h4><div class="stat-val" id="gTotalNoGst" style="color:var(--success)">₹ 0</div></div>
+        <div class="stat-box" style="border-top-color: var(--expense);"><h4>Office Expenses</h4><div class="stat-val" id="gExpTotal" style="color:var(--expense)">₹ 0</div></div>
         <div class="stat-box" style="border-top-color: var(--danger);"><h4>Total Party Pending</h4><div class="stat-val" id="gPend" style="color:var(--danger)">₹ 0</div></div>
     </div>
     <div class="company-grid" id="compGrid"></div>
@@ -279,12 +279,14 @@
     function updateStats() {
         let tp = 0, tn = 0, tgst = 0, texp = 0, tcomm = 0;
         const selectedMonth = document.getElementById('dashMonthFilter').value;
+        
         Object.keys(db).forEach(id => {
             db[id].forEach(r => {
                 let recordMonth = r.date ? r.date.split("-")[1] : "";
                 if (selectedMonth !== "" && recordMonth !== selectedMonth) return;
-                if(id === 'EXP') texp += parseFloat(r.amt || 0);
-                else {
+                if(id === 'EXP') {
+                    texp += parseFloat(r.amt || 0);
+                } else {
                     tp += parseFloat(r.profit || 0);
                     tn += parseFloat(r.fPartyPending || r.pPend || 0);
                     tgst += parseFloat(r.gst || 0);
@@ -292,8 +294,12 @@
                 }
             });
         });
+
+        // Main Logic: Net Profit = (Total Company Profits - GST - Comm) - Office Expenses
+        let totalNetProfit = (tp - tgst - tcomm) - texp;
+
         document.getElementById('gTotal').innerText = formatINR(tp);
-        document.getElementById('gTotalNoGst').innerText = formatINR(tp - tgst - tcomm);
+        document.getElementById('gTotalNoGst').innerText = formatINR(totalNetProfit);
         document.getElementById('gExpTotal').innerText = formatINR(texp);
         document.getElementById('gPend').innerText = formatINR(tn);
     }
@@ -392,16 +398,11 @@
     }
 
     function finishSave() {
-        // BILTY WISE SORTING LOGIC ADDED HERE
         if (activeID !== 'EXP') {
-            db[activeID].sort((a, b) => {
-                const bA = parseInt(a.bilty) || 0;
-                const bB = parseInt(b.bilty) || 0;
-                return bA - bB;
-            });
+            db[activeID].sort((a, b) => (parseInt(a.bilty) || 0) - (parseInt(b.bilty) || 0));
         }
         localStorage.setItem(currentUserKey, JSON.stringify(db));
-        alert("✅ Data Saved & Sorted by Bilty!");
+        alert("✅ Data Saved!");
         clearForm(); renderTable(); init();
     }
 
@@ -413,7 +414,6 @@
         body.innerHTML = '';
         let data = db[activeID] || [];
         
-        // Isme mapping sahi rakhi hai taaki sorting ke baad bhi sahi row edit ho
         let filtered = data.map((r, i) => ({...r, originalIdx: i})).filter(r => {
             let matchesSearch = Object.values(r).some(val => String(val).toUpperCase().includes(search));
             let matchesMonth = month === "" || (r.date && r.date.split("-")[1] === month);
@@ -431,33 +431,14 @@
                 body.innerHTML += `<tr><td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.from}</td><td>${r.to}</td><td>${r.pName}</td><td>${r.charge}</td><td>${r.totalBill}</td><td class="badge-pending">${r.pPend}</td><td>${r.hire}</td><td class="badge-pending">${r.bPend}</td><td>${r.veh}</td><td class="badge-profit">${r.profit}</td><td><button class="btn-edit" onclick="editSuraj(${r.originalIdx})">✏️</button><button class="btn-del" onclick="delR(${r.originalIdx})">🗑️</button></td></tr>`;
             });
         } else {
-            head.innerHTML = `<tr>
-                <th>Date</th><th>Bilty</th><th>Bill No</th><th>From</th><th>To</th>
-                <th>Truck Hire</th><th>Loading</th><th>T. Total</th><th>Broker</th>
-                <th>Adv</th><th>B. Pend</th><th>Clear Date</th>
-                <th>P. Pend</th><th>Profit</th><th>Actions</th>
-            </tr>`;
-            
+            head.innerHTML = `<tr><th>Date</th><th>Bilty</th><th>Bill No</th><th>From</th><th>To</th><th>T. Hire</th><th>T. Total</th><th>Broker</th><th>B. Pend</th><th>P. Pend</th><th>Profit</th><th>Actions</th></tr>`;
             filtered.forEach((r) => {
                 body.innerHTML += `<tr>
-                    <td>${formatDate(r.date)}</td>
-                    <td>${r.bilty}</td>
-                    <td>${r.bill}</td>
-                    <td>${r.from}</td>
-                    <td>${r.to}</td>
-                    <td>${r.hire || 0}</td>
-                    <td>${r.loading || 0}</td>
-                    <td><b>${r.truckTotal || 0}</b></td>
-                    <td>${r.brokerName || '-'}</td>
-                    <td>${r.adv || 0}</td>
-                    <td class="badge-pending">${r.bPend || 0}</td>
-                    <td>${formatDate(r.clearDate)}</td>
-                    <td class="badge-pending">${r.fPartyPending || 0}</td>
+                    <td>${formatDate(r.date)}</td><td>${r.bilty}</td><td>${r.bill}</td><td>${r.from}</td><td>${r.to}</td>
+                    <td>${r.hire || 0}</td><td><b>${r.truckTotal || 0}</b></td><td>${r.brokerName || '-'}</td>
+                    <td class="badge-pending">${r.bPend || 0}</td><td class="badge-pending">${r.fPartyPending || 0}</td>
                     <td class="badge-profit">${r.profit || 0}</td>
-                    <td>
-                        <button class="btn-edit" onclick="editStd(${r.originalIdx})">✏️</button>
-                        <button class="btn-del" onclick="delR(${r.originalIdx})">🗑️</button>
-                    </td>
+                    <td><button class="btn-edit" onclick="editStd(${r.originalIdx})">✏️</button><button class="btn-del" onclick="delR(${r.originalIdx})">🗑️</button></td>
                 </tr>`;
             });
         }
