@@ -295,7 +295,6 @@
             });
         });
 
-        // Main Logic: Net Profit = (Total Company Profits - GST - Comm) - Office Expenses
         let totalNetProfit = (tp - tgst - tcomm) - texp;
 
         document.getElementById('gTotal').innerText = formatINR(tp);
@@ -398,8 +397,9 @@
     }
 
     function finishSave() {
+        // Updated sorting logic: Sort by Date instead of Bilty
         if (activeID !== 'EXP') {
-            db[activeID].sort((a, b) => (parseInt(a.bilty) || 0) - (parseInt(b.bilty) || 0));
+            db[activeID].sort((a, b) => new Date(a.date) - new Date(b.date));
         }
         localStorage.setItem(currentUserKey, JSON.stringify(db));
         alert("✅ Data Saved!");
